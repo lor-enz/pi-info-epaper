@@ -27,19 +27,23 @@ class Checker():
     def __init__(self):
         self.website = "something"
         self.some_number = 42
+        self.get_data()
 
-        self.check()
-
-    def check(self):
+    def get_data(self):
         with requests.Session() as s:
             download = s.get(self.CSV_URL)
-
             decoded_content = download.content.decode('utf-8')
-
             cr = csv.reader(decoded_content.splitlines(), delimiter=',')
-            my_list = list(cr)
-            for row in my_list:
+            self.all_rows = list(cr)
+            return self.all_rows
+            
+    def get_abs_vaccinated(self):   
+        vaccinated_abs = int(self.all_rows[len(self.all_rows)-1][2])
+        return vaccinated_abs
+
+    def print_all(self):
+        for row in self.all_rows:
                 print(row)
 
-
-Checker()
+checker = Checker()
+checker.get_abs_vaccinated()
