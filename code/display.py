@@ -47,7 +47,8 @@ class InfoScreen():
         logging.info(f"wrote time: {current_time}")
 
     def show_covid_data(self):
-        vaccinated_abs = self.checker.get_abs_vaccinated()
+
+        vaccinated_abs = self.checker.get_extrapolated_abs_doses()
 
         number_string = '{:,}'.format(vaccinated_abs).replace(',', '.')
         string_to_display = f"Bayern: {number_string}"
