@@ -72,7 +72,8 @@ class Checker():
         time_difference_secs = max(time_difference_secs,
                                    daily_vacc_time_in_secs)
         mean = self.get_average_daily_vaccs_of_last_days(7)
-        todays_vaccs = mean * (time_difference_secs/daily_vacc_time_in_secs)
+        todays_vaccs = int(
+            mean * (time_difference_secs/daily_vacc_time_in_secs))
         total_vaccs = int(current_info["vaccinated_abs"]) + todays_vaccs
         return total_vaccs
 
@@ -87,7 +88,7 @@ class Checker():
             daylies.append(int(row[2])-previous)
             previous = int(row[2])
         daylies = daylies[-days_to_look_back:]
-        mean = np.mean(daylies)
+        mean = int(np.mean(daylies))
         print(f"Mean of last {days_to_look_back} days is: {mean}")
         return mean
 
