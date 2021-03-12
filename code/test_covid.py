@@ -14,7 +14,8 @@ class TestChecker(unittest.TestCase):
     def test_get_average_daily_vaccs_of_last_days(self):
         from covid import Checker
         checker = Checker()
-        checker.get_average_daily_vaccs_of_last_days(7)
+        mean = checker.get_average_daily_vaccs_of_last_days(7)
+        print(f"mean: {mean}")
         self.assertEqual('foo'.upper(), 'FOO')
 
     def test_upper(self):

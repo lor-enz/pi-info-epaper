@@ -86,7 +86,6 @@ class Checker():
                 continue
             daylies.append(int(row[2])-previous)
             previous = int(row[2])
-        print(daylies)
         daylies = daylies[-days_to_look_back:]
         mean = np.mean(daylies)
         print(f"Mean of last {days_to_look_back} days is: {mean}")

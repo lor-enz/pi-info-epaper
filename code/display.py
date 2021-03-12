@@ -1,19 +1,23 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
-from PIL import Image, ImageDraw, ImageFont
-from covid import Checker
-import traceback
-import time
-from waveshare_epd import epd3in7
-import logging
-import sys
+
 import os
+import sys
 picdir = os.path.join(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__))), 'pic')
 libdir = os.path.join(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__))), 'lib')
 if os.path.exists(libdir):
     sys.path.append(libdir)
+from PIL import Image, ImageDraw, ImageFont
+from covid import Checker
+import traceback
+import time
+from waveshare_epd import epd3in7
+import logging
+
+
+
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -31,14 +35,13 @@ class InfoScreen():
         self.epd.init(0)
         self.epd.Clear(0xFF, 0)
 
-        self.font44 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 44)
+        self.font40 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 40)
         self.font36 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 36)
         self.font24 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 24)
         self.font18 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
         self.font14 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 14)
 
         self.checker = Checker()
-        self.checker.get_data()
 
     def write_current_time(self, epd, draw):
         current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -59,8 +62,8 @@ class InfoScreen():
                                0xFF)  # 0xFF: clear the frame
             draw = ImageDraw.Draw(Himage)
             self.write_current_time(epd, draw)
-            draw.text((50, 50), string_to_display,
-                      font=self.font44, fill=epd.GRAY4)
+            draw.text((10, 50), string_to_display,
+                      font=self.font40, fill=epd.GRAY4)
             epd.display_4Gray(epd.getbuffer_4Gray(Himage))
         except IOError as e:
             logging.info(e)
