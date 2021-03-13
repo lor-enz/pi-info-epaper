@@ -16,21 +16,16 @@ class TestChecker(unittest.TestCase):
         checker = Checker()
         mean = checker.get_average_daily_vaccs_of_last_days(7)
         print(f"mean: {mean}")
-        self.assertEqual('foo'.upper(), 'FOO')
+        self.assertGreater(mean, 30000)
+        self.assertLess(mean, 70000)
 
-    def test_upper(self):
-        self.assertEqual('foo'.upper(), 'FOO')
+    def test_extrapolate(self):
+        from covid import Checker
+        checker = Checker()
 
-    def test_isupper(self):
-        self.assertTrue('FOO'.isupper())
-        self.assertFalse('Foo'.isupper())
-
-    def test_split(self):
-        s = 'hello world'
-        self.assertEqual(s.split(), ['hello', 'world'])
-        # check that s.split fails when the separator is not a string
-        with self.assertRaises(TypeError):
-            s.split(2)
+        self.assertEqual(checker.extrapolate(50000, 360000), 50000)
+        self.assertEqual(checker.extrapolate(50000, 36000), 50000)
+        self.assertEqual(checker.extrapolate(50000, 18000), 25000)
 
 
 if __name__ == '__main__':
