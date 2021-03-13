@@ -35,18 +35,19 @@ class InfoScreen():
         self.epd.init(0)
         self.epd.Clear(0xFF, 0)
 
-        self.font40 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 40)
+        self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 90)
+        self.font_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 46)
         self.font36 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 36)
         self.font24 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 24)
         self.font18 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
-        self.font14 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 14)
+        self.font_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 14)
 
         self.checker = Checker()
 
     def write_current_time(self, epd, draw):
         current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         string_to_display = f"Aktualisiert um: {current_time}"
-        draw.text((0, 0), string_to_display, font=self.font14, fill=epd.GRAY4)
+        draw.text((0, 0), string_to_display, font=self.font_small, fill=epd.GRAY4)
         logging.info(f"wrote time: {current_time}")
 
     def show_covid_data(self):
@@ -54,7 +55,8 @@ class InfoScreen():
         vaccinated_abs = self.checker.get_extrapolated_abs_doses()
 
         number_string = '{:,}'.format(vaccinated_abs).replace(',', '.')
-        string_to_display = f"Bayern: {number_string}"
+        string_1_line = f"Bayern:"
+        string_2_line = f"{number_string}"
 
         epd = self.epd
         try:
@@ -62,8 +64,10 @@ class InfoScreen():
                                0xFF)  # 0xFF: clear the frame
             draw = ImageDraw.Draw(Himage)
             self.write_current_time(epd, draw)
-            draw.text((10, 50), string_to_display,
-                      font=self.font40, fill=epd.GRAY4)
+            draw.text((10, 30), string_1_line,
+                      font=self.font_big, fill=epd.GRAY4)
+            draw.text((10, 100), string_2_line,
+                      font=self.font_very_big, fill=epd.GRAY4)
             epd.display_4Gray(epd.getbuffer_4Gray(Himage))
         except IOError as e:
             logging.info(e)
@@ -73,7 +77,7 @@ class InfoScreen():
             epd3in7.epdconfig.module_exit()
             exit()
 
-    def loop_covid_data(self):
+    def loop(self, hours=3):
         while True:
             # time.sleep(60*60*1) # one hour
             time.sleep(60)  # one minute
