@@ -23,6 +23,7 @@ import numpy as np
 CSV_URL = 'https://raw.githubusercontent.com/ard-data/2020-rki-impf-archive/master/data/9_csv_v2/region_BY.csv'
 
 DAILY_VACC_TIME_IN_SECS = 36000
+LOOK_BACK_FOR_MEAN = 7
 
 
 class Checker():
@@ -70,18 +71,19 @@ class Checker():
         print(
             f"time_difference_secs {time_difference_secs} current_time {current_time} info_unix {info_unix}")
         # Let's say vaccinations happen from 8:00 to 18:00 Uhr so 10 hours or 36000 secs
-
-        time_difference_secs = min(time_difference_secs,
-                                   DAILY_VACC_TIME_IN_SECS)
-        mean = self.get_average_daily_vaccs_of_last_days(7)
-        todays_vaccs = int(
-            mean * (time_difference_secs/DAILY_VACC_TIME_IN_SECS))
-        total_vaccs = int(current_info["vaccinated_abs"]) + todays_vaccs
+        mean = self.get_average_daily_vaccs_of_last_days(LOOK_BACK_FOR_MEAN)
+        todays_vaccs = self.extrapolate(mean, time_difference_secs)
+        vaccs_til_8am = int(current_info["vaccinated_abs"])
+        total_vaccs = vaccs_til_8am + todays_vaccs
+        print(f"""Using mean {mean} of last {LOOK_BACK_FOR_MEAN} days 
+        to calculate todays newest vaccs estimate based on {time_difference_secs} seconds (or {time_difference_secs / 60 / 60} hours)
+        since 8am. Resulting in todays vaccs til now being {todays_vaccs}
+        Adding that to offical vaccs of {vaccs_til_8am}
+        results in total vaccs of {total_vaccs}""")
         return total_vaccs
 
     def extrapolate(self, daily_mean, seconds):
         seconds = min(seconds, DAILY_VACC_TIME_IN_SECS)
-
         progress = (seconds/DAILY_VACC_TIME_IN_SECS)
         todays_vaccs = int(daily_mean * progress)
         return todays_vaccs
