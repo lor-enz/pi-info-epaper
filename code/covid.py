@@ -20,9 +20,12 @@ import csv
 import requests
 import numpy as np
 
+CSV_URL = 'https://raw.githubusercontent.com/ard-data/2020-rki-impf-archive/master/data/9_csv_v2/region_BY.csv'
+
+DAILY_VACC_TIME_IN_SECS = 36000
+
 
 class Checker():
-    CSV_URL = 'https://raw.githubusercontent.com/ard-data/2020-rki-impf-archive/master/data/9_csv_v2/region_BY.csv'
 
     def __str__(self):
         return f"website: {self.website} \nnumber: {self.some_number}"
@@ -32,7 +35,7 @@ class Checker():
 
     def download_data(self):
         with requests.Session() as s:
-            download = s.get(self.CSV_URL)
+            download = s.get(CSV_URL)
             decoded_content = download.content.decode('utf-8')
             cr = csv.reader(decoded_content.splitlines(), delimiter=',')
             self.all_rows = list(cr)
@@ -67,15 +70,21 @@ class Checker():
         print(
             f"time_difference_secs {time_difference_secs} current_time {current_time} info_unix {info_unix}")
         # Let's say vaccinations happen from 8:00 to 18:00 Uhr so 10 hours or 36000 secs
-        daily_vacc_time_in_secs = 36000
 
-        time_difference_secs = max(time_difference_secs,
-                                   daily_vacc_time_in_secs)
+        time_difference_secs = min(time_difference_secs,
+                                   DAILY_VACC_TIME_IN_SECS)
         mean = self.get_average_daily_vaccs_of_last_days(7)
         todays_vaccs = int(
-            mean * (time_difference_secs/daily_vacc_time_in_secs))
+            mean * (time_difference_secs/DAILY_VACC_TIME_IN_SECS))
         total_vaccs = int(current_info["vaccinated_abs"]) + todays_vaccs
         return total_vaccs
+
+    def extrapolate(self, daily_mean, seconds):
+        seconds = min(seconds, DAILY_VACC_TIME_IN_SECS)
+
+        progress = (seconds/DAILY_VACC_TIME_IN_SECS)
+        todays_vaccs = int(daily_mean * progress)
+        return todays_vaccs
 
     def get_average_daily_vaccs_of_last_days(self, days_to_look_back):
         daylies = []
