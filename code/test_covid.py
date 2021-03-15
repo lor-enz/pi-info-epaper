@@ -3,6 +3,23 @@ import unittest
 
 class TestChecker(unittest.TestCase):
 
+    def test_fix(self):
+        from covid import Databook
+        databook = Databook()
+        databook.fix_comma_in_csv("infe.csv")
+        self.assertLess(1, 70000)
+
+    def test_get_inz_munich(self):
+        from covid import Databook
+        databook = Databook()
+        inz = databook.get_inz_munich()
+
+    def test_get_inz_bavaria(self):
+        from covid import Databook
+        databook = Databook()
+        inz = databook.get_inz_bavaria()
+        print(f'got inz: {(inz)}')
+
     def test_get_current_abs_doses(self):
         from covid import Databook
         databook = Databook()

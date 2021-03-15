@@ -127,22 +127,33 @@ class Databook():
         self.load_vacc_dataframe()
         self.load_infe_dataframe()
 
+    def fix_comma_in_csv(self, filename):
+        fin = open(filename, "rt")
+        data = fin.read()
+        data = data.replace(',\" 00:00 Uhr', ' 00:00 Uhr')
+        data = data.replace('","', '.')
+        fin.close()
+        fin = open(filename, "wt")
+        fin.write(data)
+        fin.close()
+
     def load_infe_dataframe(self):
         # INFE
         csv = CSV_URL_INFE[1]
-        df = pd.read_csv(csv, sep=',')
-        df = df[['last_update', 'BL', 'GEN', 'county',
-                 'cases7_per_100k', 'cases7_bl_per_100k']]
+        self.fix_comma_in_csv(csv)
+        df = pd.read_csv(csv, sep=',', index_col=0)
         self.df_infe = df
 
     def get_inz_bavaria(self):
-        the_one_row = self.df_infe[self.df_infe["county"] == 'SK München']
-        inz = the_one_row['cases7_bl_per_100k'].values[0]
+        the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
+        inz = the_one_row['cases7_bl_per_100k']
+        inz = "{: .1f}".format(inz.values[0])
         return inz
 
     def get_inz_munich(self):
-        the_one_row = self.df_infe[self.df_infe["county"] == 'SK München']
-        inz = the_one_row['cases7_per_100k'].values[0]
+        the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
+        inz = the_one_row['cases7_per_100k']
+        inz = "{: .1f}".format(inz.values[0])
         return inz
 
     def load_vacc_dataframe(self):
@@ -181,7 +192,7 @@ class Databook():
         mean = self.get_average_daily_vaccs_of_last_days(LOOK_BACK_FOR_MEAN)
         todays_vaccs = self.extrapolate(mean, time_difference_secs)
         total_vaccs = official_doses + todays_vaccs
-        print(f"""Using mean {mean} of last {LOOK_BACK_FOR_MEAN} days 
+        print(f"""Using mean {mean} of last {LOOK_BACK_FOR_MEAN} days
         to calculate todays newest vaccs estimate based on {time_difference_secs} seconds (or {time_difference_secs / 60 / 60} hours)
         since 8am. Resulting in todays vaccs til now being {todays_vaccs}
         Adding that to offical vaccs of {official_doses}
