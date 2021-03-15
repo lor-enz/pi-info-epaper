@@ -10,7 +10,7 @@ libdir = os.path.join(os.path.dirname(
 if os.path.exists(libdir):
     sys.path.append(libdir)
 from PIL import Image, ImageDraw, ImageFont
-from covid import Checker
+from covid import Databook
 import traceback
 import time
 from waveshare_epd import epd3in7
@@ -35,28 +35,36 @@ class InfoScreen():
         self.epd.init(0)
         self.epd.Clear(0xFF, 0)
 
-        self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 90)
-        self.font_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 46)
-        self.font36 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 36)
-        self.font24 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 24)
-        self.font18 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
-        self.font_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 14)
+        self.font_huge = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 90)
+        self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 46)
+        self.font_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 45)
+        self.font_medium = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 20)
+        self.font_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
+        self.font_very_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 14)
 
-        self.checker = Checker()
+        self.databook = Databook()
 
     def write_current_time(self, epd, draw):
         current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         string_to_display = f"Aktualisiert um: {current_time}"
-        draw.text((0, 0), string_to_display, font=self.font_small, fill=epd.GRAY4)
+        draw.text((0, 0), string_to_display, font=self.font_very_small, fill=epd.GRAY4)
         logging.info(f"wrote time: {current_time}")
 
     def show_covid_data(self):
 
-        vaccinated_abs = self.checker.get_extrapolated_abs_doses()
+        vaccinated_abs = self.databook.get_extrapolated_abs_doses()
+        munich_inz = self.databook.get_inz_munich()
+        bavaria_inz = self.databook.get_inz_bavaria()
 
         number_string = '{:,}'.format(vaccinated_abs).replace(',', '.')
         string_1_line = f"Bayern:"
         string_2_line = f"{number_string}"
+
+        string_bottom_left_1 = f"BY Inz:"
+        string_bottom_left_2 = f"{bavaria_inz}"
+        string_bottom_right_1 = f"Münch. Inz:"
+        string_bottom_right_2 = f"{munich_inz}"
+        
 
         epd = self.epd
         try:
@@ -64,10 +72,24 @@ class InfoScreen():
                                0xFF)  # 0xFF: clear the frame
             draw = ImageDraw.Draw(Himage)
             self.write_current_time(epd, draw)
+            # Vaccinations
             draw.text((10, 30), string_1_line,
-                      font=self.font_big, fill=epd.GRAY4)
-            draw.text((10, 100), string_2_line,
                       font=self.font_very_big, fill=epd.GRAY4)
+            draw.text((10, 80), string_2_line,
+                      font=self.font_huge, fill=epd.GRAY4)
+            # Inz BY
+            draw.text((10, 200), string_bottom_left_1,
+                      font=self.font_medium, fill=epd.GRAY4)
+            draw.text((10, 220), string_bottom_left_2,
+                      font=self.font_big, fill=epd.GRAY4)
+
+            # Inz MUC
+            draw.text((290, 200), string_bottom_right_1,
+                      font=self.font_medium, fill=epd.GRAY4)
+            draw.text((290, 220), string_bottom_right_2,
+                      font=self.font_big, fill=epd.GRAY4)
+
+            # push to display
             epd.display_4Gray(epd.getbuffer_4Gray(Himage))
         except IOError as e:
             logging.info(e)

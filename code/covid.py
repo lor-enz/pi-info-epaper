@@ -26,7 +26,7 @@ CSV_URL_INFE = (
 
 
 DAILY_VACC_TIME_IN_SECS = 36000  # 36000 = 10 hours
-LOOK_BACK_FOR_MEAN = 7
+LOOK_BACK_FOR_MEAN = 3
 OLDNESS_THRESHOLD = 3600 * 12  # 3600 = 1 hour
 PICKLE_FILE = 'storage.p'
 
@@ -92,6 +92,9 @@ class Databook():
     def maybe_download_data(self, what):
         if self.is_fresh_data_needed(what):
             self.download_data(what)
+            logging.info(f"Downloaded new version of {what[1]}")
+        else:
+            logging.info(f"Skipping download of {what[1]}")
 
     def download_data(self, what):
         keyname = what[2]
@@ -131,6 +134,16 @@ class Databook():
         df = df[['last_update', 'BL', 'GEN', 'county',
                  'cases7_per_100k', 'cases7_bl_per_100k']]
         self.df_infe = df
+
+    def get_inz_bavaria(self):
+        the_one_row = self.df_infe[self.df_infe["county"] == 'SK München']
+        inz = the_one_row['cases7_bl_per_100k'].values[0]
+        return inz
+
+    def get_inz_munich(self):
+        the_one_row = self.df_infe[self.df_infe["county"] == 'SK München']
+        inz = the_one_row['cases7_per_100k'].values[0]
+        return inz
 
     def load_vacc_dataframe(self):
         # VACC
@@ -185,8 +198,9 @@ class Databook():
         mean = self.df_vacc.tail(days_to_look_back)[
             'dosen_kumulativ_differenz_zum_vortag'].values.mean()
         print(f"Mean of last {days_to_look_back} days is: {mean}")
-        return mean
+        return int(mean)
 
 
 databook = Databook()
 print(f"get_current_abs_doses   {databook.get_current_abs_doses()}")
+print(f"inz_munich   {databook.get_inz_munich()}")
