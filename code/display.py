@@ -57,12 +57,12 @@ class InfoScreen():
         bavaria_inz = self.databook.get_inz_bavaria()
 
         number_string = '{:,}'.format(vaccinated_abs).replace(',', '.')
-        string_1_line = f"Bayern:"
+        string_1_line = f"Verteilte Impfdosen in Bayern"
         string_2_line = f"{number_string}"
 
-        string_bottom_left_1 = f"BY Inz:"
+        string_bottom_left_1 = f"Bayern Inz:"
         string_bottom_left_2 = f"{bavaria_inz}"
-        string_bottom_right_1 = f"Münch. Inz:"
+        string_bottom_right_1 = f"München Inz:"
         string_bottom_right_2 = f"{munich_inz}"
         
 
@@ -73,9 +73,9 @@ class InfoScreen():
             draw = ImageDraw.Draw(Himage)
             self.write_current_time(epd, draw)
             # Vaccinations
-            draw.text((10, 30), string_1_line,
-                      font=self.font_very_big, fill=epd.GRAY4)
-            draw.text((10, 80), string_2_line,
+            draw.text((10, 40), string_1_line,
+                      font=self.font_medium, fill=epd.GRAY4)
+            draw.text((10, 70), string_2_line,
                       font=self.font_huge, fill=epd.GRAY4)
             # Inz BY
             draw.text((10, 200), string_bottom_left_1,
