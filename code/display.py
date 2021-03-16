@@ -16,12 +16,7 @@ import time
 from waveshare_epd import epd3in7
 import logging
 
-
-
-
-
 logging.basicConfig(level=logging.DEBUG)
-
 
 class InfoScreen():
 
@@ -36,9 +31,9 @@ class InfoScreen():
         self.epd.Clear(0xFF, 0)
 
         self.font_huge = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 90)
-        self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 46)
+        self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'),85)
         self.font_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 45)
-        self.font_medium = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 20)
+        self.font_medium = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 28)
         self.font_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
         self.font_very_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 14)
 
@@ -72,24 +67,26 @@ class InfoScreen():
                                0xFF)  # 0xFF: clear the frame
             draw = ImageDraw.Draw(Himage)
             self.write_current_time(epd, draw)
+            
             # Vaccinations
             draw.text((10, 40), string_1_line,
                       font=self.font_medium, fill=epd.GRAY4)
-            draw.text((10, 70), string_2_line,
+            draw.text((10, 60), string_2_line,
                       font=self.font_huge, fill=epd.GRAY4)
             # Inz BY
-            draw.text((10, 200), string_bottom_left_1,
+            draw.text((21, 170), string_bottom_left_1,
                       font=self.font_medium, fill=epd.GRAY4)
-            draw.text((10, 220), string_bottom_left_2,
-                      font=self.font_big, fill=epd.GRAY4)
+            draw.text((0, 190), string_bottom_left_2,
+                      font=self.font_very_big, fill=epd.GRAY4)
 
             # Inz MUC
-            draw.text((290, 200), string_bottom_right_1,
+            draw.text((293, 170), string_bottom_right_1,
                       font=self.font_medium, fill=epd.GRAY4)
-            draw.text((290, 220), string_bottom_right_2,
-                      font=self.font_big, fill=epd.GRAY4)
+            draw.text((273, 190), string_bottom_right_2,
+                      font=self.font_very_big, fill=epd.GRAY4)
 
             # push to display
+            Himage.save(r'image.png')
             epd.display_4Gray(epd.getbuffer_4Gray(Himage))
         except IOError as e:
             logging.info(e)
