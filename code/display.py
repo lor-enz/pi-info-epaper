@@ -26,6 +26,8 @@ class InfoScreen():
     def __init__(self):
         print("created InfoScreen class")
 
+        self.databook = Databook()
+
         self.epd = epd3in7.EPD()
         self.epd.init(0)
         self.epd.Clear(0xFF, 0)
@@ -37,13 +39,11 @@ class InfoScreen():
         self.font_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
         self.font_very_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 14)
 
-        self.databook = Databook()
-
     def write_current_time(self, epd, draw):
         current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        string_to_display = f"Aktualisiert um: {current_time}"
+        string_to_display = f"Last change at: {current_time}"
         draw.text((0, 0), string_to_display, font=self.font_very_small, fill=epd.GRAY4)
-        logging.info(f"wrote time: {current_time}")
+        logging.info(f"Add to screen {string_to_display}")
 
     def show_covid_data(self):
 
@@ -51,14 +51,19 @@ class InfoScreen():
         munich_inz = self.databook.get_inz_munich()
         bavaria_inz = self.databook.get_inz_bavaria()
 
-        number_string = '{:,}'.format(vaccinated_abs).replace(',', '.')
+        if not (vaccinated_abs[1] or munich_inz[1] or bavaria_inz[1]):
+            # No changes
+            logging.info(f"Data is the same. Skipping Display change")
+            return
+        logging.info(f"Will refresh screen...")
+        number_string = '{:,}'.format(vaccinated_abs[0]).replace(',', '.')
         string_1_line = f"Verteilte Impfdosen in Bayern"
         string_2_line = f"{number_string}"
 
         string_bottom_left_1 = f"Bayern Inz:"
-        string_bottom_left_2 = f"{bavaria_inz}"
+        string_bottom_left_2 = f"{bavaria_inz[0]}"
         string_bottom_right_1 = f"München Inz:"
-        string_bottom_right_2 = f"{munich_inz}"
+        string_bottom_right_2 = f"{munich_inz[0]}"
         
 
         epd = self.epd
@@ -69,20 +74,20 @@ class InfoScreen():
             self.write_current_time(epd, draw)
             
             # Vaccinations
-            draw.text((10, 40), string_1_line,
+            draw.text((20, 40), string_1_line,
                       font=self.font_medium, fill=epd.GRAY4)
-            draw.text((10, 60), string_2_line,
+            draw.text((20, 60), string_2_line,
                       font=self.font_huge, fill=epd.GRAY4)
             # Inz BY
-            draw.text((21, 170), string_bottom_left_1,
+            draw.text((20, 170), string_bottom_left_1,
                       font=self.font_medium, fill=epd.GRAY4)
-            draw.text((0, 190), string_bottom_left_2,
+            draw.text((20, 190), string_bottom_left_2,
                       font=self.font_very_big, fill=epd.GRAY4)
 
             # Inz MUC
             draw.text((293, 170), string_bottom_right_1,
                       font=self.font_medium, fill=epd.GRAY4)
-            draw.text((273, 190), string_bottom_right_2,
+            draw.text((293, 190), string_bottom_right_2,
                       font=self.font_very_big, fill=epd.GRAY4)
 
             # push to display

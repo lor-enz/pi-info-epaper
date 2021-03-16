@@ -27,7 +27,7 @@ CSV_URL_INFE = (
 
 DAILY_VACC_TIME_IN_SECS = 36000  # 36000 = 10 hours
 LOOK_BACK_FOR_MEAN = 3
-OLDNESS_THRESHOLD = 3600 * 12  # 3600 = 1 hour
+OLDNESS_THRESHOLD = 3600 * 10  # 3600 = 1 hour
 PICKLE_FILE = 'storage.p'
 
 
@@ -35,7 +35,10 @@ class Databook():
 
     storage = {
         'last_download_vacc': 0,
-        'last_download_infe': 0
+        'last_download_infe': 0,
+        'bay_vac':-1,
+        'muc_inz':-1,
+        'bay_inz':-1,
     }
 
     def __init__(self):
@@ -58,20 +61,29 @@ class Databook():
 
     def is_fresh_data_needed(self, what):
         is_needed = False
+        reason = "Unknown reason"
         filename = what[1]
         keyname = what[2]
-        if not os.path.isfile(filename):
-            is_needed = True
-
+    
         oldness = ((time.time() - self.storage[keyname]) / 60)
         now = datetime.datetime.now()
         is_working_hours = now.hour > 6 and now.hour < 20
-
+        
         if (is_working_hours and oldness > OLDNESS_THRESHOLD):
             is_needed = True
+        elif is_working_hours:
+            reason = f"Data is still fresh. Oldness: {oldness}"
+        else:
+            reason = "Data not fresh, but it's outside working hours right now."
+
+        if not os.path.isfile(filename):
+            is_needed = True
+            reason = "No local data"
 
         if is_needed:
-            logging.info(f"New {keyname} data is needed...")
+            logging.info(f"New {keyname} data is needed. Reason {reason}")
+        else:
+            logging.info(f"Download of {keyname} can be skipped. Reason {reason}")
         return is_needed
 
     def get_infe_last_update_timestamp(self, filename):
@@ -93,8 +105,6 @@ class Databook():
         if self.is_fresh_data_needed(what):
             self.download_data(what)
             logging.info(f"Downloaded new version of {what[1]}")
-        else:
-            logging.info(f"Skipping download of {what[1]}")
 
     def download_data(self, what):
         keyname = what[2]
@@ -147,14 +157,20 @@ class Databook():
     def get_inz_bavaria(self):
         the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
         inz = the_one_row['cases7_bl_per_100k']
-        inz = "{: .1f}".format(inz.values[0])
-        return inz
+        inz = "{: .1f}".format(inz.values[0]).strip()
+        # store it!
+        changed =  not (self.storage["bay_inz"] == inz)
+        self.storage["bay_vac"] = inz
+        return (inz, changed)
 
     def get_inz_munich(self):
         the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
         inz = the_one_row['cases7_per_100k']
-        inz = "{: .1f}".format(inz.values[0])
-        return inz
+        inz = "{: .1f}".format(inz.values[0]).strip()
+        # store it!
+        changed =  not (self.storage["muc_inz"] == inz)
+        self.storage["muc_vac"] = inz
+        return (inz, changed)
 
     def load_vacc_dataframe(self):
         # VACC
@@ -170,34 +186,37 @@ class Databook():
         df = df.astype({'dosen_kumulativ_differenz_zum_vortag': 'int64'})
         self.df_vacc = df
 
-    def get_current_abs_doses(self):
-        return self.df_vacc.tail(1)['dosen_kumulativ'].values[0]
+    def get_official_abs_doses(self):
+        new_value = self.df_vacc.tail(1)['dosen_kumulativ'].values[0]
+        return new_value
 
     def get_data_date(self):
         return self.df_vacc.tail(1).index.values[0]
 
     def get_extrapolated_abs_doses(self):
-        official_doses = self.get_current_abs_doses()
+        official_doses = self.get_official_abs_doses()
         # current_info["vaccinated_abs"]
         official_doses_timestamp = self.storage['last_download_vacc']
 
         current_time = int(time.time())
         time_difference_secs = current_time - official_doses_timestamp
-        print(
-            f"time_difference_secs {time_difference_secs} current_time {current_time} official_doses_timestamp {official_doses_timestamp}")
-        # Let's say vaccinations happen from 8:00 to 18:00 Uhr so 10 hours or 36000 secs
+        logging.info(
+            f"current_time {current_time} MINUS official_doses_timestamp {official_doses_timestamp} EQUALS time_difference_secs {time_difference_secs} ")
 
         time_difference_secs = min(time_difference_secs,
                                    DAILY_VACC_TIME_IN_SECS)
         mean = self.get_average_daily_vaccs_of_last_days(LOOK_BACK_FOR_MEAN)
         todays_vaccs = self.extrapolate(mean, time_difference_secs)
         total_vaccs = official_doses + todays_vaccs
-        print(f"""Using mean {mean} of last {LOOK_BACK_FOR_MEAN} days
-        to calculate todays newest vaccs estimate based on {time_difference_secs} seconds (or {time_difference_secs / 60 / 60} hours)
+        logging.info(f"""Using mean {mean} of last {LOOK_BACK_FOR_MEAN} days
+        to calculate todays newest vaccs estimate based on {time_difference_secs} seconds (or {"{: .1f}".format((time_difference_secs / 60 / 60))} hours)
         since 8am. Resulting in todays vaccs til now being {todays_vaccs}
         Adding that to offical vaccs of {official_doses}
         results in total vaccs of {total_vaccs}""")
-        return total_vaccs
+        # store it!
+        changed =  not (self.storage["bay_vac"] == total_vaccs)
+        self.storage["bay_vac"] = total_vaccs
+        return (total_vaccs, changed)
 
     def extrapolate(self, daily_mean, seconds):
         seconds = min(seconds, DAILY_VACC_TIME_IN_SECS)
@@ -208,10 +227,9 @@ class Databook():
     def get_average_daily_vaccs_of_last_days(self, days_to_look_back):
         mean = self.df_vacc.tail(days_to_look_back)[
             'dosen_kumulativ_differenz_zum_vortag'].values.mean()
-        print(f"Mean of last {days_to_look_back} days is: {int(mean)}")
         return int(mean)
 
 
-databook = Databook()
-print(f"get_current_abs_doses   {databook.get_current_abs_doses()}")
-print(f"inz_munich   {databook.get_inz_munich()}")
+#databook = Databook()
+#print(f"get_official_abs_doses   {databook.get_official_abs_doses()}")
+#print(f"inz_munich   {databook.get_inz_munich()}")
