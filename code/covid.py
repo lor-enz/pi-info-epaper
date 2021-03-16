@@ -30,6 +30,12 @@ LOOK_BACK_FOR_MEAN = 3
 OLDNESS_THRESHOLD = 3600 * 10  # 3600 = 1 hour
 PICKLE_FILE = 'storage.p'
 
+def is_business_hours(self):
+    now = datetime.datetime.now()
+    if (now.hour == 18 and now.minute == 00):
+        return True
+    return now.hour >= 7 and now.hour <= 18
+        
 
 class Databook():
 
@@ -66,6 +72,11 @@ class Databook():
         s2 = f'bay_vac: {self.storage["bay_vac"]}  muc_inz: {self.storage["muc_inz"]}  bay_inz: {self.storage["bay_inz"]}'
         return s1 + s2
 
+    def is_business_hours(self):
+        now = datetime.datetime.now()
+        if (now.hour == 18 and now.minute == 00):
+            return True
+        return now.hour >= 7 and now.hour <= 18
 
     def is_fresh_data_needed(self, what):
         is_needed = False
@@ -74,12 +85,12 @@ class Databook():
         keyname = what[2]
     
         oldness = ((time.time() - self.storage[keyname]) / 60)
-        now = datetime.datetime.now()
-        is_working_hours = now.hour >= 7 and now.hour <= 18
         
-        if (is_working_hours and oldness > OLDNESS_THRESHOLD):
+        is_business_hours = self.is_business_hours()
+        
+        if (is_business_hours and oldness > OLDNESS_THRESHOLD):
             is_needed = True
-        elif is_working_hours:
+        elif is_business_hours:
             reason = f'Data is still fresh. Oldness: {"{:.1f}".format(oldness/60/60)} hours'
         else:
             reason = "Outside working hours right now."
@@ -227,7 +238,7 @@ class Databook():
         results in total vaccs of {total_vaccs}""")
         # store it!
         changed =  not (self.storage["bay_vac"] == total_vaccs)
-        print(f'stored {self.storage["bay_vac"]}  ==  {total_vaccs} new_value -> {not changed}')
+        #print(f'stored {self.storage["bay_vac"]}  ==  {total_vaccs} new_value -> {not changed}')
         self.storage["bay_vac"] = total_vaccs
         self.save_pickle()
         return (total_vaccs, changed)
