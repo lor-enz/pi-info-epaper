@@ -50,14 +50,22 @@ class Databook():
             with open(PICKLE_FILE, 'br') as f:
                 self.storage = pickle.load(f)
         logging.info(
-            f"Loaded Pickle... vacc {self.storage['last_download_vacc']} & infe {self.storage['last_download_infe']} ")
+            f"Loaded Pickle... {self.print_storage()}")
 
     def save_pickle(self):
         logging.info(
-            f"Saving Pickle... vacc {self.storage['last_download_vacc']} & infe {self.storage['last_download_infe']} ")
+            f"Saving Pickle...")
 
         with open(PICKLE_FILE, 'bw') as f:
             pickle.dump(self.storage, f)
+        logging.info(
+            f"Saved Pickle!")
+
+    def print_storage(self):
+        s1 = f'last_download_vacc: {self.storage["last_download_vacc"]}  last_download_infe: {self.storage["last_download_infe"]}  '
+        s2 = f'bay_vac: {self.storage["bay_vac"]}  muc_inz: {self.storage["muc_inz"]}  bay_inz: {self.storage["bay_inz"]}'
+        return s1 + s2
+
 
     def is_fresh_data_needed(self, what):
         is_needed = False
@@ -67,14 +75,14 @@ class Databook():
     
         oldness = ((time.time() - self.storage[keyname]) / 60)
         now = datetime.datetime.now()
-        is_working_hours = now.hour > 6 and now.hour < 20
+        is_working_hours = now.hour >= 7 and now.hour <= 18
         
         if (is_working_hours and oldness > OLDNESS_THRESHOLD):
             is_needed = True
         elif is_working_hours:
-            reason = f"Data is still fresh. Oldness: {oldness}"
+            reason = f'Data is still fresh. Oldness: {"{:.1f}".format(oldness/60/60)} hours'
         else:
-            reason = "Data not fresh, but it's outside working hours right now."
+            reason = "Outside working hours right now."
 
         if not os.path.isfile(filename):
             is_needed = True
@@ -154,24 +162,6 @@ class Databook():
         df = pd.read_csv(csv, sep=',', index_col=0)
         self.df_infe = df
 
-    def get_inz_bavaria(self):
-        the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
-        inz = the_one_row['cases7_bl_per_100k']
-        inz = "{: .1f}".format(inz.values[0]).strip()
-        # store it!
-        changed =  not (self.storage["bay_inz"] == inz)
-        self.storage["bay_vac"] = inz
-        return (inz, changed)
-
-    def get_inz_munich(self):
-        the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
-        inz = the_one_row['cases7_per_100k']
-        inz = "{: .1f}".format(inz.values[0]).strip()
-        # store it!
-        changed =  not (self.storage["muc_inz"] == inz)
-        self.storage["muc_vac"] = inz
-        return (inz, changed)
-
     def load_vacc_dataframe(self):
         # VACC
         csv = CSV_URL_VACC[1]
@@ -186,11 +176,34 @@ class Databook():
         df = df.astype({'dosen_kumulativ_differenz_zum_vortag': 'int64'})
         self.df_vacc = df
 
+    def get_inz_bavaria(self):
+        the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
+        inz = the_one_row['cases7_bl_per_100k']
+        inz = "{:.1f}".format(inz.values[0])
+        # store it!
+        changed =  not (self.storage["bay_inz"] == inz)
+        #print(f'stored {self.storage["bay_inz"]}  ==  {inz} new_value -> {not changed}')
+        self.storage["bay_inz"] = inz
+        self.save_pickle()
+        return (inz, changed)
+
+    def get_inz_munich(self):
+        the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
+        inz = the_one_row['cases7_per_100k']
+        inz = "{:.1f}".format(inz.values[0])
+        # store it!
+        changed =  not (self.storage["muc_inz"] == inz)
+        #print(f'stored {self.storage["muc_inz"]}  ==  {inz} new_value -> {not changed}')
+        self.storage["muc_inz"] = inz
+        self.save_pickle()
+        return (inz, changed)
+
     def get_official_abs_doses(self):
         new_value = self.df_vacc.tail(1)['dosen_kumulativ'].values[0]
         return new_value
 
     def get_data_date(self):
+        # Remove this? Unused?
         return self.df_vacc.tail(1).index.values[0]
 
     def get_extrapolated_abs_doses(self):
@@ -203,19 +216,20 @@ class Databook():
         logging.info(
             f"current_time {current_time} MINUS official_doses_timestamp {official_doses_timestamp} EQUALS time_difference_secs {time_difference_secs} ")
 
-        time_difference_secs = min(time_difference_secs,
-                                   DAILY_VACC_TIME_IN_SECS)
         mean = self.get_average_daily_vaccs_of_last_days(LOOK_BACK_FOR_MEAN)
         todays_vaccs = self.extrapolate(mean, time_difference_secs)
         total_vaccs = official_doses + todays_vaccs
+        total_vaccs = '{:,}'.format(total_vaccs).replace(',', '.')
         logging.info(f"""Using mean {mean} of last {LOOK_BACK_FOR_MEAN} days
-        to calculate todays newest vaccs estimate based on {time_difference_secs} seconds (or {"{: .1f}".format((time_difference_secs / 60 / 60))} hours)
+        to calculate todays newest vaccs estimate based on {time_difference_secs} seconds (or {"{:.1f}".format((time_difference_secs / 60 / 60))} hours)
         since 8am. Resulting in todays vaccs til now being {todays_vaccs}
         Adding that to offical vaccs of {official_doses}
         results in total vaccs of {total_vaccs}""")
         # store it!
         changed =  not (self.storage["bay_vac"] == total_vaccs)
+        print(f'stored {self.storage["bay_vac"]}  ==  {total_vaccs} new_value -> {not changed}')
         self.storage["bay_vac"] = total_vaccs
+        self.save_pickle()
         return (total_vaccs, changed)
 
     def extrapolate(self, daily_mean, seconds):
