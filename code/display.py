@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 class InfoScreen():
 
-    vacc_partial_refresh_pixels = (20,72,453, 77)
+    vacc_partial_refresh_pixels = (26, 77, 433, 149)
 
     def __str__(self):
         return f"Infoscreen class, what should I print?"
@@ -45,24 +45,47 @@ class InfoScreen():
         logging.info(f"Add to screen {string_to_display}")
 
     def partial_refresh_vacc_for_minutes(self, minutes):
+        if not self.databook.is_business_hours():
+            logging.info(f"Could skip partial refresh during non business hours")
+            return
+
+        start_time = time.time()
         epd = self.epd
-        epd.init(1)         # 1 Gary mode
-        epd.Clear(0xFF, 1)
-        image = Image.new('1', (epd.height, epd.width), 255)
-        draw = ImageDraw.Draw(image)
-        num = 0
-        while (True):
-            # get fresh data
-            vaccinated_abs = self.databook.get_extrapolated_abs_doses()
-            string_2_line = f"{vaccinated_abs[0]}"
-            #draw.rectangle((10, 10, 120, 50), fill=255)
-            draw.rectangle(self.vacc_partial_refresh_pixels, fill=255)
-            self.write_just_vac_number(draw, string_2_line)
+        
+        try:
+            epd.init(1)         # 1 Gary mode
+            epd.Clear(0xFF, 1)
+            image = Image.new('1', (epd.height, epd.width), 255)
+            draw = ImageDraw.Draw(image)
+            num = 0
+            # Clear area once, so framebuffer works?
+            draw.rectangle(self.vacc_partial_refresh_pixels, fill=0)
             epd.display_1Gray(epd.getbuffer(image))
-            logging.info(f"PARTIAL {vaccinated_abs[0]}")
-            num = num + 1
-            if(num == minutes):
-                break
+            draw.rectangle(self.vacc_partial_refresh_pixels, fill=255)
+            epd.display_1Gray(epd.getbuffer(image))
+            
+            while (True):
+                # get fresh data
+                vaccinated_abs = self.databook.get_extrapolated_abs_doses()
+                string_2_line = f"{vaccinated_abs[0]}"
+                
+                #draw.rectangle(self.vacc_partial_refresh_pixels, fill=0)
+                #epd.display_1Gray(epd.getbuffer(image))
+                draw.rectangle(self.vacc_partial_refresh_pixels, fill=255)
+                self.write_just_vac_number(draw, string_2_line)
+                epd.display_1Gray(epd.getbuffer(image))
+                logging.info(f"PARTIAL {vaccinated_abs[0]}")
+                current_time = time.time()
+                if(int((current_time - start_time) / 60) >= minutes):
+                    break
+            epd.sleep()
+        except IOError as e:
+            logging.info(e)
+
+        except KeyboardInterrupt:
+            logging.info("ctrl + c:")
+            epd3in7.epdconfig.module_exit()
+            exit()
 
     def write_just_vac_number(self, draw, string_2_line):
         # Vaccinations
@@ -126,13 +149,11 @@ class InfoScreen():
             epd3in7.epdconfig.module_exit()
             exit()
 
-    def loop(self, hours=3):
-        while True:
-            # time.sleep(60*60*1) # one hour
-            time.sleep(60)  # one minute
-            self.show_covid_data()
+    def clear(self):
+        self.epd.init(0)
+        self.epd.Clear(0xFF, 0)
 
-    def test_display(self):
+    def demo(self):
         try:
             logging.info("epd3in7 Demo")
 
@@ -238,4 +259,5 @@ class InfoScreen():
 
 screen = InfoScreen()
 screen.maybe_refresh_all_covid_data()
-#screen.partial_refresh_vacc_for_minutes(30)
+#screen.clear()
+screen.partial_refresh_vacc_for_minutes(9)
