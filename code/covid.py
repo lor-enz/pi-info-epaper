@@ -109,7 +109,7 @@ class Databook():
             df = pd.read_csv(filename, sep=',',
                              index_col=0, parse_dates=True)
             last_update = ((df.tail(1).index.astype(
-                np.int64) // 10**9) + 60*60*(24+8)).tolist()[0]
+                np.int64) // 10**9)).tolist()[0] + 60*60*(24+8)
             self.storage[keyname] = last_update
             self.save_pickle()
         elif (filename == 'infe.csv'):
@@ -208,7 +208,7 @@ class Databook():
     def get_average_daily_vaccs_of_last_days(self, days_to_look_back):
         mean = self.df_vacc.tail(days_to_look_back)[
             'dosen_kumulativ_differenz_zum_vortag'].values.mean()
-        print(f"Mean of last {days_to_look_back} days is: {mean}")
+        print(f"Mean of last {days_to_look_back} days is: {int(mean)}")
         return int(mean)
 
 
