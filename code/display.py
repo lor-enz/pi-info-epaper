@@ -20,17 +20,16 @@ logging.basicConfig(level=logging.DEBUG)
 
 class InfoScreen():
 
+    vacc_partial_refresh_pixels = (20,72,453, 77)
+
     def __str__(self):
         return f"Infoscreen class, what should I print?"
 
     def __init__(self):
-        print("created InfoScreen class")
-
+        logging.info(f'Init InfoScreen at {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}')
         self.databook = Databook()
 
-        self.epd = epd3in7.EPD()
-        self.epd.init(0)
-        self.epd.Clear(0xFF, 0)
+        self.epd = epd3in7.EPD()       
 
         self.font_huge = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 90)
         self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'),85)
@@ -45,20 +44,46 @@ class InfoScreen():
         draw.text((0, 0), string_to_display, font=self.font_very_small, fill=epd.GRAY4)
         logging.info(f"Add to screen {string_to_display}")
 
-    def show_covid_data(self):
+    def partial_refresh_vacc_for_minutes(self, minutes):
+        epd = self.epd
+        epd.init(1)         # 1 Gary mode
+        epd.Clear(0xFF, 1)
+        image = Image.new('1', (epd.height, epd.width), 255)
+        draw = ImageDraw.Draw(image)
+        num = 0
+        while (True):
+            # get fresh data
+            vaccinated_abs = self.databook.get_extrapolated_abs_doses()
+            string_2_line = f"{vaccinated_abs[0]}"
+            #draw.rectangle((10, 10, 120, 50), fill=255)
+            draw.rectangle(self.vacc_partial_refresh_pixels, fill=255)
+            self.write_just_vac_number(draw, string_2_line)
+            epd.display_1Gray(epd.getbuffer(image))
+            logging.info(f"PARTIAL {vaccinated_abs[0]}")
+            num = num + 1
+            if(num == minutes):
+                break
+
+    def write_just_vac_number(self, draw, string_2_line):
+        # Vaccinations
+        draw.text((20, 60), string_2_line,font=self.font_huge, fill=0)
+
+    def maybe_refresh_all_covid_data(self):
 
         vaccinated_abs = self.databook.get_extrapolated_abs_doses()
         munich_inz = self.databook.get_inz_munich()
         bavaria_inz = self.databook.get_inz_bavaria()
-
+        logging.info(f'Got data from databook vaccinated_abs {vaccinated_abs} munich_inz {munich_inz} bavaria_inz {bavaria_inz}')
         if not (vaccinated_abs[1] or munich_inz[1] or bavaria_inz[1]):
             # No changes
             logging.info(f"Data is the same. Skipping Display change")
             return
         logging.info(f"Will refresh screen...")
-        number_string = '{:,}'.format(vaccinated_abs[0]).replace(',', '.')
+        self.epd.init(0)
+        self.epd.Clear(0xFF, 0)
+        
         string_1_line = f"Verteilte Impfdosen in Bayern"
-        string_2_line = f"{number_string}"
+        string_2_line = f"{vaccinated_abs[0]}"
 
         string_bottom_left_1 = f"Bayern Inz:"
         string_bottom_left_2 = f"{bavaria_inz[0]}"
@@ -76,8 +101,7 @@ class InfoScreen():
             # Vaccinations
             draw.text((20, 40), string_1_line,
                       font=self.font_medium, fill=epd.GRAY4)
-            draw.text((20, 60), string_2_line,
-                      font=self.font_huge, fill=epd.GRAY4)
+            self.write_just_vac_number(draw, string_2_line)
             # Inz BY
             draw.text((20, 170), string_bottom_left_1,
                       font=self.font_medium, fill=epd.GRAY4)
@@ -93,6 +117,7 @@ class InfoScreen():
             # push to display
             Himage.save(r'image.png')
             epd.display_4Gray(epd.getbuffer_4Gray(Himage))
+            epd.sleep()
         except IOError as e:
             logging.info(e)
 
@@ -211,6 +236,6 @@ class InfoScreen():
             epd3in7.epdconfig.module_exit()
             exit()
 
-
 screen = InfoScreen()
-screen.show_covid_data()
+screen.maybe_refresh_all_covid_data()
+#screen.partial_refresh_vacc_for_minutes(30)
