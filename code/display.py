@@ -46,7 +46,7 @@ class InfoScreen():
 
     def partial_refresh_vacc_for_minutes(self, minutes):
         if not self.databook.is_business_hours():
-            logging.info(f"Could skip partial refresh during non business hours")
+            logging.info(f"Skipping partial refresh because outside business hours")
             return
 
         start_time = time.time()
