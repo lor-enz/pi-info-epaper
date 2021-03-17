@@ -76,7 +76,7 @@ class InfoScreen():
                 epd.display_1Gray(epd.getbuffer(image))
                 logging.info(f"PARTIAL {vaccinated_abs[0]}")
                 current_time = time.time()
-                if(int((current_time - start_time) / 60) >= minutes):
+                if(int((current_time - start_time) / 60) >= minutes) or self.cancel_file_exists():
                     break
             epd.sleep()
         except IOError as e:
@@ -86,6 +86,12 @@ class InfoScreen():
             logging.info("ctrl + c:")
             epd3in7.epdconfig.module_exit()
             exit()
+
+    def cancel_file_exists(self):
+        x= os.path.isfile("/home/pi/partial.cancel")
+        if (x):
+            print(f"Cancel file found")
+        return x
 
     def write_just_vac_number(self, draw, string_2_line):
         # Vaccinations

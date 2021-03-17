@@ -58,16 +58,13 @@ class Databook():
             with open(PICKLE_FILE, 'br') as f:
                 self.storage = pickle.load(f)
         logging.info(
-            f"Loaded Pickle... {self.print_storage()}")
+            f"LOAD Pickle... {self.print_storage()}")
 
     def save_pickle(self):
-        logging.info(
-            f"Saving Pickle...")
-
         with open(PICKLE_FILE, 'bw') as f:
             pickle.dump(self.storage, f)
         logging.info(
-            f"Saved Pickle!")
+            f"SAVE Pickle!   {self.print_storage()}")
 
     def print_storage(self):
         s1 = f'last_download_vacc: {self.storage["last_download_vacc"]}  last_download_infe: {self.storage["last_download_infe"]}  '
@@ -108,21 +105,6 @@ class Databook():
                 f"Download of {keyname} can be skipped. Reason {reason}")
         return is_needed
 
-    def get_infe_last_update_timestamp(self, filename):
-        # TODO this should be done better, and with pandas not with csv, but pandas was being difficult...
-        rows = []
-        with open(filename, newline='') as csvfile:
-            reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-            for row in reader:
-                rows.append(row)
-        date_string = rows[-1][34][3:13]
-        date_time_obj = datetime.datetime.strptime(
-            date_string, '%d.%m.%Y')
-
-        timestamp = int(date_time_obj.replace(
-            tzinfo=datetime.timezone.utc).timestamp())
-        return timestamp
-
     def maybe_download_data(self, what):
         if self.is_fresh_data_needed(what):
             self.download_data(what)
@@ -152,6 +134,21 @@ class Databook():
         else:
             logging.error(
                 f"Unknown filename! Expected vacc.csv or infe.csv. Got {filename}")
+
+    def get_infe_last_update_timestamp(self, filename):
+        # TODO this should be done better, and with pandas not with csv, but pandas was being difficult...
+        rows = []
+        with open(filename, newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+            for row in reader:
+                rows.append(row)
+        date_string = rows[-1][34][3:13]
+        date_time_obj = datetime.datetime.strptime(
+            date_string, '%d.%m.%Y')
+
+        timestamp = int(date_time_obj.replace(
+            tzinfo=datetime.timezone.utc).timestamp())
+        return timestamp
 
     def load_dataframes(self):
         self.maybe_download_data(CSV_URL_VACC)
@@ -216,24 +213,20 @@ class Databook():
         new_value = self.df_vacc.tail(1)['dosen_kumulativ'].values[0]
         return new_value
 
-    def get_data_date(self):
-        # Remove this? Unused?
-        return self.df_vacc.tail(1).index.values[0]
-
     def get_extrapolated_abs_doses(self):
         official_doses = self.get_official_abs_doses()
         official_doses_timestamp = self.storage['last_download_vacc']
 
         time_difference_secs = self.business_time_since(
-            official_doses_timestamp)
+            unix_time1=official_doses_timestamp)
 
         mean = self.get_average_daily_vaccs_of_last_days(LOOK_BACK_FOR_MEAN)
-        todays_vaccs = self.extrapolate(mean, time_difference_secs)
-        total_vaccs = official_doses + todays_vaccs
+        extra_vacs = self.extrapolate(mean, time_difference_secs)
+        total_vaccs = official_doses + extra_vacs
         total_vaccs = '{:,}'.format(total_vaccs).replace(',', '.')
         logging.info(f"""Using mean {mean} of last {LOOK_BACK_FOR_MEAN} days
-        to calculate todays newest vaccs estimate based on {time_difference_secs} seconds (or {"{:.1f}".format((time_difference_secs / 60 / 60))} hours)
-        since 8am. Resulting in todays vaccs til now being {todays_vaccs}
+        to calculate extra vacs estimate based on {time_difference_secs} seconds (or {"{:.1f}".format((time_difference_secs / 60 / 60))} hours)
+        since 8am. Resulting in extra vacs til now being {extra_vacs}
         Adding that to offical vaccs of {official_doses}
         results in total vaccs of {total_vaccs}""")
         # store it!
@@ -245,21 +238,24 @@ class Databook():
 
     def extrapolate(self, daily_mean, seconds):
         progress = (seconds/DAILY_VACC_TIME_IN_SECS)
-        todays_vaccs = int(daily_mean * progress)
-        return todays_vaccs
+        extra_vacs = int(daily_mean * progress)
+        return extra_vacs
 
-    def business_time_since(self, unix_time1, unix_time2=dt.timestamp(dt.now())):
+    def business_time_since(self, unix_time1, unix_time2=0):
+        if unix_time2 < 1:
+            unix_time2 = dt.timestamp(dt.now())
+        
         dt_a = dt.fromtimestamp(unix_time1)
         dt_b = dt.fromtimestamp(unix_time2)
 
         dif = unix_time2 - unix_time1
         nb_full_days = int(dif / (60*60*24))
-        partial_day = min(dif % (60*60*24), 36000)
+        partial_day = min(int(dif % (60*60*24)), 36000)
 
         result = (10*60*60) * nb_full_days + partial_day
         delta = datetime.timedelta(seconds=result)
-        logging.debug(f"Input time from {dt_a}  to  {dt_b}")
-        logging.debug(
+        logging.info(f"Input time from {dt_a}  to  {dt_b}")
+        logging.info(
             f"  -> full days: {nb_full_days} + seconds of remaning day {partial_day} = {result} secs or {delta}")
         return result
 
