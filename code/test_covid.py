@@ -3,6 +3,22 @@ import unittest
 
 class TestChecker(unittest.TestCase):
 
+    def test_time(self):
+        from covid import Databook
+        databook = Databook()
+
+        result = databook.business_time_since(1615791600, 1615885200)
+        self.assertEqual(result, 12*60*60)
+
+        result = databook.business_time_since(1615791600, 1615874400)
+        self.assertEqual(result, 10*60*60)
+
+        result = databook.business_time_since(1615791600, 1615806000)
+        self.assertEqual(result, 4*60*60)
+
+        result = databook.business_time_since(1615791600, 1615964405)
+        self.assertEqual(result, 20*60*60 + 5)
+
     def test_fix(self):
         from covid import Databook
         databook = Databook()
@@ -23,15 +39,16 @@ class TestChecker(unittest.TestCase):
     def test_get_current_abs_doses(self):
         from covid import Databook
         databook = Databook()
-        doses = databook.get_current_abs_doses()
+        doses = databook.get_official_abs_doses()
         self.assertGreater(doses, 1500000)
 
     def test_get_extrapolated_abs_doses(self):
         from covid import Databook
         databook = Databook()
-        total_vaccs = databook.get_extrapolated_abs_doses()
+        total_vaccs = databook.get_extrapolated_abs_doses()[0]
         print(f"total_vaccs {total_vaccs}")
-        self.assertGreater(total_vaccs, int(databook.get_current_abs_doses()))
+        self.assertGreater(int(total_vaccs.replace('.', '')), int(
+            databook.get_official_abs_doses()))
 
     def test_get_average_daily_vaccs_of_last_days(self):
         from covid import Databook

@@ -3,6 +3,7 @@ import email
 import random
 import smtplib
 import time
+from datetime import datetime as dt
 import datetime
 import sys
 import os
@@ -30,21 +31,22 @@ LOOK_BACK_FOR_MEAN = 3
 OLDNESS_THRESHOLD = 3600 * 10  # 3600 = 1 hour
 PICKLE_FILE = 'storage.p'
 
+
 def is_business_hours(self):
     now = datetime.datetime.now()
     if (now.hour == 18 and now.minute == 00):
         return True
     return now.hour >= 7 and now.hour <= 18
-        
+
 
 class Databook():
 
     storage = {
         'last_download_vacc': 0,
         'last_download_infe': 0,
-        'bay_vac':-1,
-        'muc_inz':-1,
-        'bay_inz':-1,
+        'bay_vac': -1,
+        'muc_inz': -1,
+        'bay_inz': -1,
     }
 
     def __init__(self):
@@ -73,7 +75,7 @@ class Databook():
         return s1 + s2
 
     def is_business_hours(self):
-        now = datetime.datetime.now()
+        now = dt.now()
         if (now.hour == 18 and now.minute == 00):
             return True
         return now.hour >= 7 and now.hour <= 18
@@ -83,11 +85,11 @@ class Databook():
         reason = "Unknown reason"
         filename = what[1]
         keyname = what[2]
-    
+
         oldness = ((time.time() - self.storage[keyname]) / 60)
-        
+
         is_business_hours = self.is_business_hours()
-        
+
         if (is_business_hours and oldness > OLDNESS_THRESHOLD):
             is_needed = True
         elif is_business_hours:
@@ -102,7 +104,8 @@ class Databook():
         if is_needed:
             logging.info(f"New {keyname} data is needed. Reason {reason}")
         else:
-            logging.info(f"Download of {keyname} can be skipped. Reason {reason}")
+            logging.info(
+                f"Download of {keyname} can be skipped. Reason {reason}")
         return is_needed
 
     def get_infe_last_update_timestamp(self, filename):
@@ -192,7 +195,7 @@ class Databook():
         inz = the_one_row['cases7_bl_per_100k']
         inz = "{:.1f}".format(inz.values[0])
         # store it!
-        changed =  not (self.storage["bay_inz"] == inz)
+        changed = not (self.storage["bay_inz"] == inz)
         #print(f'stored {self.storage["bay_inz"]}  ==  {inz} new_value -> {not changed}')
         self.storage["bay_inz"] = inz
         self.save_pickle()
@@ -203,7 +206,7 @@ class Databook():
         inz = the_one_row['cases7_per_100k']
         inz = "{:.1f}".format(inz.values[0])
         # store it!
-        changed =  not (self.storage["muc_inz"] == inz)
+        changed = not (self.storage["muc_inz"] == inz)
         #print(f'stored {self.storage["muc_inz"]}  ==  {inz} new_value -> {not changed}')
         self.storage["muc_inz"] = inz
         self.save_pickle()
@@ -219,13 +222,10 @@ class Databook():
 
     def get_extrapolated_abs_doses(self):
         official_doses = self.get_official_abs_doses()
-        # current_info["vaccinated_abs"]
         official_doses_timestamp = self.storage['last_download_vacc']
 
-        current_time = int(time.time())
-        time_difference_secs = current_time - official_doses_timestamp
-        logging.info(
-            f"current_time {current_time} MINUS official_doses_timestamp {official_doses_timestamp} EQUALS time_difference_secs {time_difference_secs} ")
+        time_difference_secs = self.business_time_since(
+            official_doses_timestamp)
 
         mean = self.get_average_daily_vaccs_of_last_days(LOOK_BACK_FOR_MEAN)
         todays_vaccs = self.extrapolate(mean, time_difference_secs)
@@ -237,24 +237,33 @@ class Databook():
         Adding that to offical vaccs of {official_doses}
         results in total vaccs of {total_vaccs}""")
         # store it!
-        changed =  not (self.storage["bay_vac"] == total_vaccs)
+        changed = not (self.storage["bay_vac"] == total_vaccs)
         #print(f'stored {self.storage["bay_vac"]}  ==  {total_vaccs} new_value -> {not changed}')
         self.storage["bay_vac"] = total_vaccs
         self.save_pickle()
         return (total_vaccs, changed)
 
     def extrapolate(self, daily_mean, seconds):
-        seconds = min(seconds, DAILY_VACC_TIME_IN_SECS)
         progress = (seconds/DAILY_VACC_TIME_IN_SECS)
         todays_vaccs = int(daily_mean * progress)
         return todays_vaccs
+
+    def business_time_since(self, unix_time1, unix_time2=dt.timestamp(dt.now())):
+        dt_a = dt.fromtimestamp(unix_time1)
+        dt_b = dt.fromtimestamp(unix_time2)
+
+        dif = unix_time2 - unix_time1
+        nb_full_days = int(dif / (60*60*24))
+        partial_day = min(dif % (60*60*24), 36000)
+
+        result = (10*60*60) * nb_full_days + partial_day
+        delta = datetime.timedelta(seconds=result)
+        logging.debug(f"Input time from {dt_a}  to  {dt_b}")
+        logging.debug(
+            f"  -> full days: {nb_full_days} + seconds of remaning day {partial_day} = {result} secs or {delta}")
+        return result
 
     def get_average_daily_vaccs_of_last_days(self, days_to_look_back):
         mean = self.df_vacc.tail(days_to_look_back)[
             'dosen_kumulativ_differenz_zum_vortag'].values.mean()
         return int(mean)
-
-
-#databook = Databook()
-#print(f"get_official_abs_doses   {databook.get_official_abs_doses()}")
-#print(f"inz_munich   {databook.get_inz_munich()}")
