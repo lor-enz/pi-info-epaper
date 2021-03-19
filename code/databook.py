@@ -1,0 +1,199 @@
+import mytime as mytime
+import fetcher as ff
+
+import os
+import logging
+
+import csv
+import requests
+import numpy as np
+import pandas as pd
+
+logging.basicConfig(level=logging.INFO)
+
+LOOK_BACK_FOR_MEAN = 3
+OLDNESS_THRESHOLD_LARGE = 3600 * 20  # 3600 = 1 hour
+OLDNESS_THRESHOLD_SMALL = 3600 * 10  # 3600 = 1 hour
+
+STORAGE_FILE = 'databook-storage.json'
+
+
+def is_fresh_data_needed(freshness_timestamp, filename):
+    is_needed = False
+
+    oldness = (mytime.current_time() - freshness_timestamp)
+
+    if (mytime.is_business_hours() and oldness > OLDNESS_THRESHOLD_SMALL):
+        is_needed = True
+        reason = f"Old files and during business hours. Oldness: {mytime.seconds2delta(oldness)} Small Threshold: {OLDNESS_THRESHOLD_SMALL}"
+    elif mytime.is_business_hours():
+        reason = f'Data is still fresh. Oldness: {mytime.seconds2delta(oldness)}'
+    elif oldness > OLDNESS_THRESHOLD_LARGE:
+        is_needed = True
+        reason = f"Very old files. Oldness: {mytime.seconds2delta(oldness)} Large Threshold: {OLDNESS_THRESHOLD_LARGE}"
+    else:
+        reason = f"Outside working hours right now and data not that old. Oldness: {mytime.seconds2delta(oldness)}"
+
+    if not os.path.isfile(filename):
+        is_needed = True
+        reason = "No local data"
+
+    if is_needed:
+        logging.info(f"New {filename} data is needed. Reason {reason}")
+    else:
+        logging.info(
+            f"Download of {filename} can be skipped. Reason {reason}")
+    return is_needed
+
+
+class Databook:
+
+    def __init__(self):
+        self.inf_freshness_timestamp = 0
+        self.vac_freshness_timestamp = 0
+        self.bay_vac = -1
+        self.muc_inz = -1
+        self.bay_inz = -1
+
+        self.maybe_download_data()
+        self.inf_freshness_timestamp = self.get_inf_last_update_timestamp()
+        self.vac_freshness_timestamp = self.get_vac_last_update_timestamp()
+        self.save_storage()
+        self.inf_df = self.load_inf_dataframe()
+        self.vac_df = self.load_vac_dataframe()
+
+
+
+    def load_storage(self):
+        if not os.path.isfile(STORAGE_FILE):
+            logging.info(f'{STORAGE_FILE} does not exist (yet)')
+            return  # no file?
+        from storage import retrieve
+        storage = retrieve(STORAGE_FILE)
+        self.inf_freshness_timestamp = storage['inf_freshness_timestamp']
+        self.vac_freshness_timestamp = storage['vac_freshness_timestamp']
+
+        logging.info(f'Loaded {STORAGE_FILE}')
+
+    def save_storage(self):
+        storage = {
+            'inf_freshness_timestamp': self.inf_freshness_timestamp,
+            'vac_freshness_timestamp': self.vac_freshness_timestamp
+        }
+        from storage import store
+        store(STORAGE_FILE, storage)
+
+    def is_fresh_inf_data_needed(self):
+        return is_fresh_data_needed(self.inf_freshness_timestamp, ff.CSV_INF['file'])
+
+    def is_fresh_vac_data_needed(self):
+        return is_fresh_data_needed(self.vac_freshness_timestamp, ff.CSV_VAC['file'])
+
+    def maybe_download_data(self):
+        fetcher = ff.Fetcher()
+        if self.is_fresh_inf_data_needed():
+            fetcher.download_data(ff.CSV_INF)
+            logging.info(f"Downloaded new version of {ff.CSV_INF['file']}")
+        if self.is_fresh_vac_data_needed():
+            fetcher.download_data(ff.CSV_VAC)
+            logging.info(f"Downloaded new version of {ff.CSV_VAC['file']}")
+
+        fetcher.save_storage()
+
+    def get_inf_last_update_timestamp(self):
+        # TODO this should be done better, and with pandas not with csv, but pandas was being difficult...
+        rows = []
+        with open(ff.CSV_INF['file'], newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+            for row in reader:
+                rows.append(row)
+        date_string = rows[-1][34]
+
+        freshness_timestamp = mytime.dt2ts(time_string=date_string, time_format="%d.%m.%Y_%H:%M Uhr")
+        return freshness_timestamp
+
+    def get_vac_last_update_timestamp(self):
+        df = pd.read_csv(ff.CSV_VAC['file'], sep=',',
+                         index_col=0, parse_dates=True)
+        last_update = ((df.tail(1).index.astype(
+            np.int64) // 10 ** 9)).tolist()[0] + 60 * 60 * (24 + 7)
+        return last_update
+
+    def load_inf_dataframe(self):
+        # INFE
+        csv_path = ff.CSV_INF['file']
+        df = pd.read_csv(csv_path, sep=',', index_col=0)
+        return df
+
+    def load_vac_dataframe(self):
+        # VACC
+        csv_path = ff.CSV_VAC['file']
+        df = pd.read_csv(
+            csv_path, sep=',', index_col=0, parse_dates=True)
+        df = df[['dosen_kumulativ', 'impf_inzidenz_dosen']]
+        df['dosen_kumulativ_differenz_zum_vortag'] = df.dosen_kumulativ - \
+                                                     df.dosen_kumulativ.shift(1)
+
+        df['dosen_kumulativ_differenz_zum_vortag'] = df['dosen_kumulativ_differenz_zum_vortag'].fillna(
+            0)
+        df = df.astype({'dosen_kumulativ_differenz_zum_vortag': 'int64'})
+        return df
+
+    def get_inz_bavaria(self):
+        the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
+        inz = the_one_row['cases7_bl_per_100k']
+        inz = "{:.1f}".format(inz.values[0])
+        # store it!
+        changed = not (self.storage["bay_inz"] == inz)
+        # print(f'stored {self.storage["bay_inz"]}  ==  {inz} new_value -> {not changed}')
+        self.storage["bay_inz"] = inz
+        self.save_pickle()
+        return (inz, changed)
+
+    def get_inz_munich(self):
+        the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
+        inz = the_one_row['cases7_per_100k']
+        inz = "{:.1f}".format(inz.values[0])
+        # store it!
+        changed = not (self.storage["muc_inz"] == inz)
+        # print(f'stored {self.storage["muc_inz"]}  ==  {inz} new_value -> {not changed}')
+        self.storage["muc_inz"] = inz
+        self.save_pickle()
+        return (inz, changed)
+
+    def get_official_abs_doses(self):
+        new_value = self.df_vacc.tail(1)['dosen_kumulativ'].values[0]
+        return new_value
+
+    def get_extrapolated_abs_doses(self):
+        official_doses = self.get_official_abs_doses()
+        official_doses_timestamp = self.storage['last_download_vacc']
+
+        time_difference_secs = mytime.business_time_since(official_doses_timestamp)
+
+        mean = self.get_average_daily_vaccs_of_last_days(LOOK_BACK_FOR_MEAN)
+        extra_vacs = self.extrapolate(mean, time_difference_secs)
+        total_vaccs = official_doses + extra_vacs
+        total_vaccs = '{:,}'.format(total_vaccs).replace(',', '.')
+        logging.info(f"""Using mean {mean} of last {LOOK_BACK_FOR_MEAN} days
+        to calculate extra vacs estimate based on {time_difference_secs} seconds (or {"{:.1f}".format((time_difference_secs / 60 / 60))} hours)
+        since 8am. Resulting in extra vacs til now being {extra_vacs}
+        Adding that to offical vaccs of {official_doses}
+        results in total vaccs of {total_vaccs}""")
+        # store it!
+        changed = not (self.storage["bay_vac"] == total_vaccs)
+        # print(f'stored {self.storage["bay_vac"]}  ==  {total_vaccs} new_value -> {not changed}')
+        self.storage["bay_vac"] = total_vaccs
+        self.save_pickle()
+        return (total_vaccs, changed)
+
+    def extrapolate(self, daily_mean, seconds):
+        progress = (seconds / mytime.daily_business_time_seconds())
+        extra_vacs = int(daily_mean * progress)
+        return extra_vacs
+
+
+    def get_average_daily_vaccs_of_last_days(self, days_to_look_back):
+        mean = self.df_vacc.tail(days_to_look_back)[
+            'dosen_kumulativ_differenz_zum_vortag'].values.mean()
+        return int(mean)
