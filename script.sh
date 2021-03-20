@@ -1,3 +1,3 @@
 #!/bin/sh
 
-/usr/bin/python3 /home/pi/projects/pi-zero-info-screen/code/display.py
+/usr/bin/python3 /home/pi/projects/pi-zero-info-screen/code/main.py

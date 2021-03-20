@@ -47,3 +47,7 @@ class TestTimeTool(unittest.TestCase):
 
         result = business_time_since(tt.dt2ts("2021-03-10_17:55"), tt.dt2ts("2021-03-10_18:05"))
         self.assertEqual(5*60, result)
+
+
+if __name__ == "__main__":
+    unittest.main()

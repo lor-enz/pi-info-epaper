@@ -1,6 +1,6 @@
 import unittest
 
-class TestTimeTool(unittest.TestCase):
+class TestPaper(unittest.TestCase):
 
     def test_paper_demo(self):
         from paper_demo import Paper
@@ -13,3 +13,4 @@ class TestTimeTool(unittest.TestCase):
         book = db.Databook()
         paper = pap.Paper(book)
         print(paper)
+
