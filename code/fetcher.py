@@ -67,8 +67,8 @@ class Fetcher:
 
     def save_storage(self):
         storage = {
-            CSV_INF['key']: self.inf_download_timestamp,
-            CSV_VAC['key']: self.vac_download_timestamp
+            CSV_INF['key']: int(self.inf_download_timestamp),
+            CSV_VAC['key']: int(self.vac_download_timestamp)
         }
         from storage import store
         store(STORAGE_FILE, storage)
@@ -96,3 +96,4 @@ class Fetcher:
         else:
             logging.error(
                 f"Unknown filename! Expected vac.csv or inf.csv. Got {csv_data['file']}")
+        self.save_storage()

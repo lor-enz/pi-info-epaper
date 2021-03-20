@@ -27,5 +27,5 @@ class TestFetcher(unittest.TestCase):
         fetcher.save_storage()
         another_fetcher = ff.Fetcher()
         another_fetcher.load_storage()
-        self.assertEqual(fetcher.vac_download_timestamp, another_fetcher.vac_download_timestamp)
-        self.assertEqual(fetcher.inf_download_timestamp, another_fetcher.inf_download_timestamp)
+        self.assertEqual(int(fetcher.vac_download_timestamp), another_fetcher.vac_download_timestamp)
+        self.assertEqual(int(fetcher.inf_download_timestamp), another_fetcher.inf_download_timestamp)

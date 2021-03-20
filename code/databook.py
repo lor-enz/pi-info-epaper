@@ -12,7 +12,7 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO)
 
 LOOK_BACK_FOR_MEAN = 3
-OLDNESS_THRESHOLD_LARGE = 3600 * 20  # 3600 = 1 hour
+OLDNESS_THRESHOLD_LARGE = 3600 * 36  # 3600 = 1 hour
 OLDNESS_THRESHOLD_SMALL = 3600 * 10  # 3600 = 1 hour
 
 STORAGE_FILE = 'databook-storage.json'
@@ -20,8 +20,9 @@ STORAGE_FILE = 'databook-storage.json'
 
 def is_fresh_data_needed(freshness_timestamp, filename):
     is_needed = False
-
-    oldness = (mytime.current_time() - freshness_timestamp)
+    current_time = mytime.current_time()
+    # print(f"current_time {current_time} freshness_timestamp {freshness_timestamp}")
+    oldness = (current_time - freshness_timestamp)
 
     if (mytime.is_business_hours() and oldness > OLDNESS_THRESHOLD_SMALL):
         is_needed = True
@@ -51,18 +52,17 @@ class Databook:
     def __init__(self):
         self.inf_freshness_timestamp = 0
         self.vac_freshness_timestamp = 0
+        self.dl_attempt_timestamp = 0
         self.bay_vac = -1
         self.muc_inz = -1
         self.bay_inz = -1
-
+        self.load_storage()
         self.maybe_download_data()
         self.inf_freshness_timestamp = self.get_inf_last_update_timestamp()
         self.vac_freshness_timestamp = self.get_vac_last_update_timestamp()
         self.save_storage()
         self.inf_df = self.load_inf_dataframe()
         self.vac_df = self.load_vac_dataframe()
-
-
 
     def load_storage(self):
         if not os.path.isfile(STORAGE_FILE):
@@ -72,13 +72,20 @@ class Databook:
         storage = retrieve(STORAGE_FILE)
         self.inf_freshness_timestamp = storage['inf_freshness_timestamp']
         self.vac_freshness_timestamp = storage['vac_freshness_timestamp']
+        self.bay_vac = storage['bay_vac']
+        self.bay_inz = storage['bay_inz']
+        self.muc_inz = storage['muc_inz']
 
         logging.info(f'Loaded {STORAGE_FILE}')
 
     def save_storage(self):
         storage = {
-            'inf_freshness_timestamp': self.inf_freshness_timestamp,
-            'vac_freshness_timestamp': self.vac_freshness_timestamp
+            'inf_freshness_timestamp': int(self.inf_freshness_timestamp),
+            'vac_freshness_timestamp': int(self.vac_freshness_timestamp),
+            'last_dl_attempt': int(self.dl_attempt_timestamp),
+            'bay_vac': self.bay_vac,
+            'bay_inz': self.bay_inz,
+            'muc_inz': self.muc_inz
         }
         from storage import store
         store(STORAGE_FILE, storage)
@@ -90,6 +97,11 @@ class Databook:
         return is_fresh_data_needed(self.vac_freshness_timestamp, ff.CSV_VAC['file'])
 
     def maybe_download_data(self):
+        seconds_since_last_attempt = mytime.current_time() - self.dl_attempt_timestamp
+        if seconds_since_last_attempt < 60 * 19:
+            logging.info(f'Not attempting another download. Last one was {mytime.seconds2delta(seconds_since_last_attempt)} ago')
+            return
+
         fetcher = ff.Fetcher()
         if self.is_fresh_inf_data_needed():
             fetcher.download_data(ff.CSV_INF)
@@ -97,7 +109,7 @@ class Databook:
         if self.is_fresh_vac_data_needed():
             fetcher.download_data(ff.CSV_VAC)
             logging.info(f"Downloaded new version of {ff.CSV_VAC['file']}")
-
+        self.dl_attempt_timestamp = mytime.current_time()
         fetcher.save_storage()
 
     def get_inf_last_update_timestamp(self):
@@ -140,60 +152,59 @@ class Databook:
         return df
 
     def get_inz_bavaria(self):
-        the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
+        the_one_row = self.inf_df[self.inf_df['county'] == 'SK München']
         inz = the_one_row['cases7_bl_per_100k']
         inz = "{:.1f}".format(inz.values[0])
         # store it!
-        changed = not (self.storage["bay_inz"] == inz)
-        # print(f'stored {self.storage["bay_inz"]}  ==  {inz} new_value -> {not changed}')
-        self.storage["bay_inz"] = inz
-        self.save_pickle()
-        return (inz, changed)
+        changed = not self.bay_inz == inz
+        self.bay_inz = inz
+        self.save_storage()
+        return inz, changed
 
     def get_inz_munich(self):
-        the_one_row = self.df_infe[self.df_infe['county'] == 'SK München']
+        the_one_row = self.inf_df[self.inf_df['county'] == 'SK München']
         inz = the_one_row['cases7_per_100k']
         inz = "{:.1f}".format(inz.values[0])
         # store it!
-        changed = not (self.storage["muc_inz"] == inz)
+        changed = not self.muc_inz == inz
         # print(f'stored {self.storage["muc_inz"]}  ==  {inz} new_value -> {not changed}')
-        self.storage["muc_inz"] = inz
-        self.save_pickle()
-        return (inz, changed)
+        self.muc_inz = inz
+        self.save_storage()
+        return inz, changed
 
     def get_official_abs_doses(self):
-        new_value = self.df_vacc.tail(1)['dosen_kumulativ'].values[0]
+        new_value = self.vac_df.tail(1)['dosen_kumulativ'].values[0]
         return new_value
 
     def get_extrapolated_abs_doses(self):
         official_doses = self.get_official_abs_doses()
-        official_doses_timestamp = self.storage['last_download_vacc']
+        official_doses_timestamp = self.vac_freshness_timestamp
 
         time_difference_secs = mytime.business_time_since(official_doses_timestamp)
 
         mean = self.get_average_daily_vaccs_of_last_days(LOOK_BACK_FOR_MEAN)
         extra_vacs = self.extrapolate(mean, time_difference_secs)
-        total_vaccs = official_doses + extra_vacs
-        total_vaccs = '{:,}'.format(total_vaccs).replace(',', '.')
+        total_vacs = official_doses + extra_vacs
+        total_vacs = '{:,}'.format(total_vacs).replace(',', '.')
         logging.info(f"""Using mean {mean} of last {LOOK_BACK_FOR_MEAN} days
         to calculate extra vacs estimate based on {time_difference_secs} seconds (or {"{:.1f}".format((time_difference_secs / 60 / 60))} hours)
         since 8am. Resulting in extra vacs til now being {extra_vacs}
         Adding that to offical vaccs of {official_doses}
-        results in total vaccs of {total_vaccs}""")
+        results in total vaccs of {total_vacs}""")
         # store it!
-        changed = not (self.storage["bay_vac"] == total_vaccs)
+        print(f'self.bay_vac {self.bay_vac}  total_vacs {total_vacs}')
+        changed = not (self.bay_vac == total_vacs)
         # print(f'stored {self.storage["bay_vac"]}  ==  {total_vaccs} new_value -> {not changed}')
-        self.storage["bay_vac"] = total_vaccs
-        self.save_pickle()
-        return (total_vaccs, changed)
+        self.bay_vac = total_vacs
+        self.save_storage()
+        return (total_vacs, changed)
 
     def extrapolate(self, daily_mean, seconds):
         progress = (seconds / mytime.daily_business_time_seconds())
         extra_vacs = int(daily_mean * progress)
         return extra_vacs
 
-
     def get_average_daily_vaccs_of_last_days(self, days_to_look_back):
-        mean = self.df_vacc.tail(days_to_look_back)[
+        mean = self.vac_df.tail(days_to_look_back)[
             'dosen_kumulativ_differenz_zum_vortag'].values.mean()
         return int(mean)

@@ -18,7 +18,7 @@ def ts2dt(timestamp):
 
 
 def dt2ts(time_string, time_format="%Y-%m-%d_%H:%M", timezone_name=TZ_GERMANY):
-    print(f'time_string {time_string} time_format {time_format} timezone_name {timezone_name}')
+    logging.debug(f'time_string {time_string} time_format {time_format} timezone_name {timezone_name}')
     dt_obj = datetime.datetime.strptime(time_string, time_format)
     timezone_obj = pytz.timezone(timezone_name)
     dt_obj = timezone_obj.localize(dt_obj)
@@ -26,7 +26,6 @@ def dt2ts(time_string, time_format="%Y-%m-%d_%H:%M", timezone_name=TZ_GERMANY):
 
 
 def seconds2delta(seconds):
-    print(f'seconds # # # # {seconds}')
     return datetime.timedelta(seconds=seconds)
 
 
