@@ -30,5 +30,9 @@ class TestDatabook(unittest.TestCase):
         book = db.Databook()
         all_doses = book.get_extrapolated_abs_doses()
         print(f'All Doses in bavaria: {all_doses}')
-        self.assertGreater(float(all_doses[0].replace('.','')), 1700000)
-        self.assertLess(float(all_doses[0].replace('.','')), 30 * 1000000)
+        self.assertGreater(float(all_doses[0].replace('.', '')), 1700000)
+        self.assertLess(float(all_doses[0].replace('.', '')), 30 * 1000000)
+
+
+if __name__ == "__main__":
+    unittest.main()

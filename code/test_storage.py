@@ -42,7 +42,6 @@ class TestTimeTool(unittest.TestCase):
         os.remove(filename)
 
     def test_overwrite(self):
-        import os
         from storage import store, retrieve
         filename = self.filename
         penguin1 = {
@@ -65,4 +64,9 @@ class TestTimeTool(unittest.TestCase):
         self.assertEqual(retrieved['height'], penguin2['height'])
         self.assertEqual(retrieved['timestamp'], penguin2['timestamp'])
 
-        # os.remove(filename)
+        import os
+        os.remove(filename)
+
+
+if __name__ == "__main__":
+    unittest.main()

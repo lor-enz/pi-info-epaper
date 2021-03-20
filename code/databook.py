@@ -26,12 +26,12 @@ def is_fresh_data_needed(freshness_timestamp, filename):
 
     if mytime.is_business_hours() and oldness > OLDNESS_THRESHOLD_SMALL:
         is_needed = True
-        reason = f"Old files and during business hours. Oldness: {mytime.seconds2delta(oldness)} Small Threshold: {OLDNESS_THRESHOLD_SMALL}"
+        reason = f"Old files and during business hours. Oldness: {mytime.seconds2delta(oldness)} Small Threshold: {mytime.seconds2delta(OLDNESS_THRESHOLD_SMALL)}"
     elif mytime.is_business_hours():
         reason = f'Data is still fresh. Oldness: {mytime.seconds2delta(oldness)}'
     elif oldness > OLDNESS_THRESHOLD_LARGE:
         is_needed = True
-        reason = f"Very old files. Oldness: {mytime.seconds2delta(oldness)} Large Threshold: {OLDNESS_THRESHOLD_LARGE}"
+        reason = f"Very old files. Oldness: {mytime.seconds2delta(oldness)} Large Threshold: {mytime.seconds2delta(OLDNESS_THRESHOLD_LARGE)}"
     else:
         reason = f"Outside working hours right now and data not that old. Oldness: {mytime.seconds2delta(oldness)}"
 
@@ -187,18 +187,12 @@ class Databook:
         extra_vacs = self.extrapolate(mean, time_difference_secs)
         total_vacs = official_doses + extra_vacs
         total_vacs = '{:,}'.format(total_vacs).replace(',', '.')
-        logging.info(f"""Using mean {mean} of last {LOOK_BACK_FOR_MEAN} days
-        to calculate extra vacs estimate based on {time_difference_secs} seconds (or {"{:.1f}".format((time_difference_secs / 60 / 60))} hours)
-        since 8am. Resulting in extra vacs til now being {extra_vacs}
-        Adding that to offical vaccs of {official_doses}
-        results in total vaccs of {total_vacs}""")
+        log_string = f'Mean {mean} of {LOOK_BACK_FOR_MEAN} days, {"{:.1f}".format((time_difference_secs / 60 / 60))} hrs passed -> {extra_vacs} extra vacs + {official_doses} previous doses = {total_vacs}'
         # store it!
-        print(f'self.bay_vac {self.bay_vac}  total_vacs {total_vacs}')
         changed = not (self.bay_vac == total_vacs)
-        # print(f'stored {self.storage["bay_vac"]}  ==  {total_vaccs} new_value -> {not changed}')
         self.bay_vac = total_vacs
         self.save_storage()
-        return total_vacs, changed
+        return total_vacs, changed, log_string
 
     def extrapolate(self, daily_mean, seconds):
         progress = (seconds / mytime.daily_business_time_seconds())

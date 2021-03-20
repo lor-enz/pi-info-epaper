@@ -5,6 +5,7 @@ import os
 import sys
 from PIL import Image, ImageDraw, ImageFont
 import time
+import mytime as mytime
 from waveshare_epd import epd3in7
 import logging
 
@@ -25,7 +26,7 @@ class Paper:
         return f"Paper class, what should I print?"
 
     def __init__(self, databook):
-        logging.info(f'Init Paper at {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}')
+        logging.info(f'Init Paper at {mytime.ts2dt(mytime.current_time())}')
         self.databook = databook
 
         self.epd = epd3in7.EPD()
@@ -38,13 +39,13 @@ class Paper:
         self.font_very_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 14)
 
     def write_current_time(self, epd, draw):
-        current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        string_to_display = f"Last change at: {current_time}"
+        current_time = time.strftime("%H:%M", time.localtime())
+        string_to_display = f"{current_time}+"
         draw.text((0, 0), string_to_display, font=self.font_very_small, fill=epd.GRAY4)
         logging.info(f"Add to screen {string_to_display}")
 
     def partial_refresh_vacc_for_minutes(self, minutes):
-        if not self.databook.is_business_hours():
+        if not mytime.is_business_hours():
             logging.info(f"Skipping partial refresh because outside business hours")
             return
 
@@ -73,7 +74,7 @@ class Paper:
                 draw.rectangle(self.vacc_partial_refresh_pixels, fill=255)
                 self.write_just_vac_number(draw, string_2_line)
                 epd.display_1Gray(epd.getbuffer(image))
-                logging.info(f"PARTIAL {vaccinated_abs[0]}")
+                logging.info(f"PARTIAL {vaccinated_abs[2]}")
                 current_time = time.time()
                 if (int((current_time - start_time) / 60) >= minutes) or self.cancel_file_exists():
                     break
@@ -154,7 +155,6 @@ class Paper:
             epd3in7.epdconfig.module_exit()
             exit()
 
-
-def clear(self):
-    self.epd.init(0)
-    self.epd.Clear(0xFF, 0)
+    def clear(self):
+        self.epd.init(0)
+        self.epd.Clear(0xFF, 0)

@@ -29,3 +29,7 @@ class TestFetcher(unittest.TestCase):
         another_fetcher.load_storage()
         self.assertEqual(int(fetcher.vac_download_timestamp), another_fetcher.vac_download_timestamp)
         self.assertEqual(int(fetcher.inf_download_timestamp), another_fetcher.inf_download_timestamp)
+
+
+if __name__ == "__main__":
+    unittest.main()

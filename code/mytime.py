@@ -76,9 +76,7 @@ def business_time_since(timestamp_a, timestamp_b=0, business_time_start=8, busin
     # per full day only count 10 hours
     result = (10 * 60 * 60) * full_days + partial_day
 
-    logging.info(f"Input time from {dt_a}  to  {dt_b}")
-    logging.info(
-        f"  -> full days: {full_days} + seconds of remaning day {partial_day} = {result} secs or {datetime.timedelta(seconds=result)}")
+    logging.debug(f"Input time from {dt_a}  to  {dt_b} -> full days: {full_days} + seconds of remaning day {partial_day} = {result} secs or {datetime.timedelta(seconds=result)}")
     return result
 
 
