@@ -24,7 +24,7 @@ def is_fresh_data_needed(freshness_timestamp, filename):
     # print(f"current_time {current_time} freshness_timestamp {freshness_timestamp}")
     oldness = (current_time - freshness_timestamp)
 
-    if (mytime.is_business_hours() and oldness > OLDNESS_THRESHOLD_SMALL):
+    if mytime.is_business_hours() and oldness > OLDNESS_THRESHOLD_SMALL:
         is_needed = True
         reason = f"Old files and during business hours. Oldness: {mytime.seconds2delta(oldness)} Small Threshold: {OLDNESS_THRESHOLD_SMALL}"
     elif mytime.is_business_hours():
@@ -99,7 +99,8 @@ class Databook:
     def maybe_download_data(self):
         seconds_since_last_attempt = mytime.current_time() - self.dl_attempt_timestamp
         if seconds_since_last_attempt < 60 * 19:
-            logging.info(f'Not attempting another download. Last one was {mytime.seconds2delta(seconds_since_last_attempt)} ago')
+            logging.info(
+                f'Not attempting another download. Last one was {mytime.seconds2delta(seconds_since_last_attempt)} ago')
             return
 
         fetcher = ff.Fetcher()
@@ -197,7 +198,7 @@ class Databook:
         # print(f'stored {self.storage["bay_vac"]}  ==  {total_vaccs} new_value -> {not changed}')
         self.bay_vac = total_vacs
         self.save_storage()
-        return (total_vacs, changed)
+        return total_vacs, changed
 
     def extrapolate(self, daily_mean, seconds):
         progress = (seconds / mytime.daily_business_time_seconds())

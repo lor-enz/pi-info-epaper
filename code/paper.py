@@ -3,6 +3,10 @@
 
 import os
 import sys
+from PIL import Image, ImageDraw, ImageFont
+import time
+from waveshare_epd import epd3in7
+import logging
 
 picdir = os.path.join(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__))), 'pic')
@@ -10,12 +14,9 @@ libdir = os.path.join(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__))), 'lib')
 if os.path.exists(libdir):
     sys.path.append(libdir)
-from PIL import Image, ImageDraw, ImageFont
-import time
-from waveshare_epd import epd3in7
-import logging
 
 logging.basicConfig(level=logging.DEBUG)
+
 
 class Paper:
     vacc_partial_refresh_pixels = (26, 77, 433, 149)
@@ -62,7 +63,7 @@ class Paper:
             draw.rectangle(self.vacc_partial_refresh_pixels, fill=255)
             epd.display_1Gray(epd.getbuffer(image))
 
-            while (True):
+            while True:
                 # get fresh data
                 vaccinated_abs = self.databook.get_extrapolated_abs_doses()
                 string_2_line = f"{vaccinated_abs[0]}"
@@ -87,7 +88,7 @@ class Paper:
 
     def cancel_file_exists(self):
         x = os.path.isfile("/home/pi/partial.cancel")
-        if (x):
+        if x:
             print(f"Cancel file found")
         return x
 
@@ -155,5 +156,5 @@ class Paper:
 
 
 def clear(self):
-        self.epd.init(0)
-        self.epd.Clear(0xFF, 0)
+    self.epd.init(0)
+    self.epd.Clear(0xFF, 0)

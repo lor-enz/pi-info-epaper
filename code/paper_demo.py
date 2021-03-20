@@ -115,14 +115,14 @@ class Paper:
             time_image = Image.new('1', (epd.height, epd.width), 255)
             time_draw = ImageDraw.Draw(time_image)
             num = 0
-            while (True):
+            while True:
                 time_draw.rectangle((10, 10, 120, 50), fill=255)
                 time_draw.text((10, 10), time.strftime(
                     '%H:%M:%S'), font=font24, fill=0)
                 epd.display_1Gray(epd.getbuffer(time_image))
 
                 num = num + 1
-                if (num == 20):
+                if num == 20:
                     break
 
             logging.info("Clear...")

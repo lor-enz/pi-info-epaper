@@ -5,7 +5,7 @@ class TestDatabook(unittest.TestCase):
 
     def test_basics(self):
         import databook as db
-        book = db.Databook()
+        db.Databook()
 
     def test_inz(self):
         import databook as db

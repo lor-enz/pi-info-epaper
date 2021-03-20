@@ -29,10 +29,6 @@ def seconds2delta(seconds):
     return datetime.timedelta(seconds=seconds)
 
 
-def vac_cell_to_ts(cell_value):
-    return 100  # TODO
-
-
 def is_business_hours(given_timestamp=0):
     if given_timestamp < 1:
         dt_object = dt.now()

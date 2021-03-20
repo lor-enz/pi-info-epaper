@@ -8,6 +8,8 @@ class TestTimeTool(unittest.TestCase):
         paper.demo()
 
     def test_paper_init(self):
-        from paper import Paper
-        paper = Paper()
+        import databook as db
+        import paper as pap
+        book = db.Databook()
+        paper = pap.Paper(book)
         print(paper)
