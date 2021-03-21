@@ -74,7 +74,8 @@ class Fetcher:
         store(STORAGE_FILE, storage)
 
     def print_storage(self):
-        return f'vac.csv downloaded at: {self.inf_download_timestamp}  inf.csv downloaded at: {self.vac_download_timestamp}'
+        return f'vac.csv downloaded at: {self.inf_download_timestamp}  ' \
+               f'inf.csv downloaded at: {self.vac_download_timestamp}'
 
     def download_all_data(self):
         self.download_data(CSV_INF)

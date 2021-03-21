@@ -1,5 +1,3 @@
-import json
-
 
 #    stores data in human readable file
 #    overwrites all previous data of file
@@ -16,6 +14,6 @@ def retrieve(filename):
 
 
 def ensure_dot_json(filename):
-    if not filename.endswith('.json'):
-        return filename + '.json'
-    return filename
+    if filename.endswith('.json'):
+        return filename
+    return f'{filename}.json'

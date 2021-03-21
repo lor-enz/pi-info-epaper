@@ -111,7 +111,7 @@ class Databook:
             fetcher.download_data(ff.CSV_VAC)
             logging.info(f"Downloaded new version of {ff.CSV_VAC['file']}")
         self.dl_attempt_timestamp = mytime.current_time()
-        fetcher.save_storage()
+        fetcher.save_storage()  # TODO can we remove this because it's already saved in fetcher.download_data()... ?
 
     def get_inf_last_update_timestamp(self):
         # TODO this should be done better, and with pandas not with csv, but pandas was being difficult...
