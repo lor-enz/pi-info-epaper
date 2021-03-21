@@ -57,7 +57,6 @@ class TestTimeTool(unittest.TestCase):
         }
         store(filename, penguin2)
 
-
         retrieved = retrieve(filename)
 
         self.assertEqual(retrieved['name'], penguin2['name'])

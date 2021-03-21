@@ -4,16 +4,17 @@
 import os
 import sys
 
+from PIL import Image, ImageDraw, ImageFont
+import time
+from waveshare_epd import epd3in7
+import logging
+
 picdir = os.path.join(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__))), 'pic')
 libdir = os.path.join(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__))), 'lib')
 if os.path.exists(libdir):
     sys.path.append(libdir)
-from PIL import Image, ImageDraw, ImageFont
-import time
-from waveshare_epd import epd3in7
-import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -51,9 +52,9 @@ class Paper:
 
             # Drawing on the Horizontal image
             logging.info("1.Drawing on the Horizontal image...")
-            Himage = Image.new('L', (epd.height, epd.width),
+            image = Image.new('L', (epd.height, epd.width),
                                0xFF)  # 0xFF: clear the frame
-            draw = ImageDraw.Draw(Himage)
+            draw = ImageDraw.Draw(image)
             draw.text((10, 0), 'hello world', font=font24, fill=0)
             draw.text((10, 20), '3.7inch e-Paper', font=font24, fill=0)
             draw.rectangle((10, 110, 154, 146), 'black', 'black')
@@ -69,27 +70,27 @@ class Paper:
             draw.arc((140, 50, 190, 100), 0, 360, fill=0)
             draw.rectangle((80, 50, 130, 100), fill=0)
             draw.chord((200, 50, 250, 100), 0, 360, fill=0)
-            epd.display_4Gray(epd.getbuffer_4Gray(Himage))
+            epd.display_4Gray(epd.getbuffer_4Gray(image))
             time.sleep(5)
 
             logging.info("2.read 4 Gray bmp file")
-            Himage = Image.open(os.path.join(picdir, '3in7_4gray2.bmp'))
-            epd.display_4Gray(epd.getbuffer_4Gray(Himage))
+            image = Image.open(os.path.join(picdir, '3in7_4gray2.bmp'))
+            epd.display_4Gray(epd.getbuffer_4Gray(image))
             time.sleep(5)
 
             logging.info("3.read bmp file on window")
-            Himage2 = Image.new('1', (epd.height, epd.width),
+            image2 = Image.new('1', (epd.height, epd.width),
                                 255)  # 255: clear the frame
             bmp = Image.open(os.path.join(picdir, '100x100.bmp'))
-            Himage2.paste(bmp, (200, 50))
-            epd.display_4Gray(epd.getbuffer_4Gray(Himage2))
+            image2.paste(bmp, (200, 50))
+            epd.display_4Gray(epd.getbuffer_4Gray(image2))
             time.sleep(5)
 
             # Drawing on the Vertical image
             logging.info("4.Drawing on the Vertical image...")
-            Limage = Image.new('L', (epd.width, epd.height),
+            l_image = Image.new('L', (epd.width, epd.height),
                                0xFF)  # 0xFF: clear the frame
-            draw = ImageDraw.Draw(Limage)
+            draw = ImageDraw.Draw(l_image)
             draw.text((2, 0), 'hello world', font=font18, fill=0)
             draw.text((2, 20), '3.7inch epd', font=font18, fill=0)
             draw.rectangle((130, 20, 274, 56), 'black', 'black')
@@ -105,7 +106,7 @@ class Paper:
             draw.arc((70, 90, 120, 140), 0, 360, fill=0)
             draw.rectangle((10, 150, 60, 200), fill=0)
             draw.chord((70, 150, 120, 200), 0, 360, fill=0)
-            epd.display_4Gray(epd.getbuffer_4Gray(Limage))
+            epd.display_4Gray(epd.getbuffer_4Gray(l_image))
             time.sleep(5)
 
             # partial update, just 1 Gary mode

@@ -1,15 +1,12 @@
-import mytime as mytime
-import fetcher as ff
 
 import os
 import logging
-
 import csv
-import requests
 import numpy as np
 import pandas as pd
 
-logging.basicConfig(level=logging.INFO)
+import mytime as mytime
+import fetcher as fet
 
 LOOK_BACK_FOR_MEAN = 3
 OLDNESS_THRESHOLD_LARGE = 3600 * 36  # 3600 = 1 hour
@@ -50,6 +47,8 @@ def is_fresh_data_needed(freshness_timestamp, filename):
 class Databook:
 
     def __init__(self):
+        logging.basicConfig(level=logging.INFO)
+
         self.inf_freshness_timestamp = 0
         self.vac_freshness_timestamp = 0
         self.dl_attempt_timestamp = 0
@@ -91,10 +90,10 @@ class Databook:
         store(STORAGE_FILE, storage)
 
     def is_fresh_inf_data_needed(self):
-        return is_fresh_data_needed(self.inf_freshness_timestamp, ff.CSV_INF['file'])
+        return is_fresh_data_needed(self.inf_freshness_timestamp, fet.CSV_INF['file'])
 
     def is_fresh_vac_data_needed(self):
-        return is_fresh_data_needed(self.vac_freshness_timestamp, ff.CSV_VAC['file'])
+        return is_fresh_data_needed(self.vac_freshness_timestamp, fet.CSV_VAC['file'])
 
     def maybe_download_data(self):
         seconds_since_last_attempt = mytime.current_time() - self.dl_attempt_timestamp
@@ -103,20 +102,20 @@ class Databook:
                 f'Not attempting another download. Last one was {mytime.seconds2delta(seconds_since_last_attempt)} ago')
             return
 
-        fetcher = ff.Fetcher()
+        fetcher = fet.Fetcher()
         if self.is_fresh_inf_data_needed():
-            fetcher.download_data(ff.CSV_INF)
-            logging.info(f"Downloaded new version of {ff.CSV_INF['file']}")
+            fetcher.download_data(fet.CSV_INF)
+            logging.info(f"Downloaded new version of {fet.CSV_INF['file']}")
         if self.is_fresh_vac_data_needed():
-            fetcher.download_data(ff.CSV_VAC)
-            logging.info(f"Downloaded new version of {ff.CSV_VAC['file']}")
+            fetcher.download_data(fet.CSV_VAC)
+            logging.info(f"Downloaded new version of {fet.CSV_VAC['file']}")
         self.dl_attempt_timestamp = mytime.current_time()
         fetcher.save_storage()  # TODO can we remove this because it's already saved in fetcher.download_data()... ?
 
     def get_inf_last_update_timestamp(self):
         # TODO this should be done better, and with pandas not with csv, but pandas was being difficult...
         rows = []
-        with open(ff.CSV_INF['file'], newline='') as csvfile:
+        with open(fet.CSV_INF['file'], newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='|')
             for row in reader:
                 rows.append(row)
@@ -126,7 +125,7 @@ class Databook:
         return freshness_timestamp
 
     def get_vac_last_update_timestamp(self):
-        df = pd.read_csv(ff.CSV_VAC['file'], sep=',',
+        df = pd.read_csv(fet.CSV_VAC['file'], sep=',',
                          index_col=0, parse_dates=True)
         last_update = ((df.tail(1).index.astype(
             np.int64) // 10 ** 9)).tolist()[0] + 60 * 60 * (24 + 7)
@@ -134,13 +133,13 @@ class Databook:
 
     def load_inf_dataframe(self):
         # INFE
-        csv_path = ff.CSV_INF['file']
+        csv_path = fet.CSV_INF['file']
         df = pd.read_csv(csv_path, sep=',', index_col=0)
         return df
 
     def load_vac_dataframe(self):
         # VACC
-        csv_path = ff.CSV_VAC['file']
+        csv_path = fet.CSV_VAC['file']
         df = pd.read_csv(
             csv_path, sep=',', index_col=0, parse_dates=True)
         df = df[['dosen_kumulativ', 'impf_inzidenz_dosen']]
@@ -183,7 +182,7 @@ class Databook:
 
         time_difference_secs = mytime.business_time_since(official_doses_timestamp)
 
-        mean = self.get_average_daily_vaccs_of_last_days(LOOK_BACK_FOR_MEAN)
+        mean = self.get_average_daily_vacs_of_last_days(LOOK_BACK_FOR_MEAN)
         extra_vacs = self.extrapolate(mean, time_difference_secs)
         total_vacs = official_doses + extra_vacs
         total_vacs = '{:,}'.format(total_vacs).replace(',', '.')
@@ -199,7 +198,7 @@ class Databook:
         extra_vacs = int(daily_mean * progress)
         return extra_vacs
 
-    def get_average_daily_vaccs_of_last_days(self, days_to_look_back):
+    def get_average_daily_vacs_of_last_days(self, days_to_look_back):
         mean = self.vac_df.tail(days_to_look_back)[
             'dosen_kumulativ_differenz_zum_vortag'].values.mean()
         return int(mean)

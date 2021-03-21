@@ -68,7 +68,6 @@ class Paper:
                 self.write_just_vac_number(draw, string_2_line)
                 epd.display_1Gray(epd.getbuffer(image))
                 logging.info(f"PARTIAL {vaccinated_abs[2]}")
-                current_time = time.time()
             epd.sleep()
         except IOError as e:
             logging.info(e)

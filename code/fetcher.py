@@ -1,12 +1,9 @@
-import datetime
-
 import os
 import logging
-
 import csv
 import requests
 
-import mytime as tt
+import mytime as mytime
 
 logging.basicConfig(level=logging.INFO)
 
@@ -20,6 +17,7 @@ CSV_INF = {
     'file': 'inf.csv',
     'key': 'inf_download_timestamp'
 }
+STORAGE_FILE = 'fetcher-storage.json'
 
 
 def fix_comma_in_csv(filename):
@@ -43,9 +41,6 @@ def inf_file_path():
     return CSV_INF['file']
 
 
-STORAGE_FILE = 'fetcher-storage.json'
-
-
 class Fetcher:
 
     def __init__(self):
@@ -53,6 +48,10 @@ class Fetcher:
 
         self.vac_download_timestamp = 0
         self.inf_download_timestamp = 0
+
+    def __str__(self):
+        return f'vac.csv downloaded at: {self.inf_download_timestamp}  ' \
+               f'inf.csv downloaded at: {self.vac_download_timestamp}'
 
     def load_storage(self):
         if not os.path.isfile(STORAGE_FILE):
@@ -73,10 +72,6 @@ class Fetcher:
         from storage import store
         store(STORAGE_FILE, storage)
 
-    def print_storage(self):
-        return f'vac.csv downloaded at: {self.inf_download_timestamp}  ' \
-               f'inf.csv downloaded at: {self.vac_download_timestamp}'
-
     def download_all_data(self):
         self.download_data(CSV_INF)
         self.download_data(CSV_VAC)
@@ -90,9 +85,9 @@ class Fetcher:
             for line in response.iter_lines():
                 writer.writerow(line.decode('utf-8').split(','))
         if csv_data['file'] == 'vac.csv':
-            self.vac_download_timestamp = tt.current_time()
+            self.vac_download_timestamp = mytime.current_time()
         elif csv_data['file'] == 'inf.csv':
-            self.inf_download_timestamp = tt.current_time()
+            self.inf_download_timestamp = mytime.current_time()
             fix_comma_in_csv(CSV_INF['file'])
         else:
             logging.error(
