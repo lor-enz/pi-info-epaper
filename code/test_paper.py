@@ -28,7 +28,7 @@ class TestPaper(unittest.TestCase):
         book = db.Databook()
         paper = Paper(book)
         paper.maybe_refresh_all_covid_data()
-        paper.partial_refresh_vacc_for_minutes(2)
+        paper.partial_refresh_vac_for(30)
 
     def test_paper_clear(self):
         from paper_demo import Paper

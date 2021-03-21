@@ -16,19 +16,16 @@ libdir = os.path.join(os.path.dirname(
 if os.path.exists(libdir):
     sys.path.append(libdir)
 
-logging.basicConfig(level=logging.DEBUG)
-
 
 class Paper:
-    vacc_partial_refresh_pixels = (26, 77, 433, 149)
+    vac_partial_refresh_pixels = (26, 77, 433, 149)
 
     def __str__(self):
         return f"Paper class, what should I print?"
 
     def __init__(self, databook):
-        logging.info(f'Init Paper at {mytime.ts2dt(mytime.current_time())}')
+        logging.info(f'Init Paper at {mytime.current_time_hr()}')
         self.databook = databook
-
         self.epd = epd3in7.EPD()
 
         self.font_huge = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 90)
@@ -39,17 +36,16 @@ class Paper:
         self.font_very_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 14)
 
     def write_current_time(self, epd, draw):
-        current_time = time.strftime("%H:%M", time.localtime())
-        string_to_display = f"{current_time}+"
+        string_to_display = f'{mytime.current_time_hr("%H:%M")}+'
         draw.text((0, 0), string_to_display, font=self.font_very_small, fill=epd.GRAY4)
         logging.info(f"Add to screen {string_to_display}")
 
-    def partial_refresh_vacc_for_minutes(self, minutes):
+    def partial_refresh_vac_for(self, duration_secs):
         if not mytime.is_business_hours():
-            logging.info(f"Skipping partial refresh because outside business hours")
+            logging.info(f'Skipping partial refresh because outside business hours {mytime.current_time_hr()}')
             return
 
-        start_time = time.time()
+        start_time = mytime.current_time()
         epd = self.epd
 
         try:
@@ -57,27 +53,22 @@ class Paper:
             epd.Clear(0xFF, 1)
             image = Image.new('1', (epd.height, epd.width), 255)
             draw = ImageDraw.Draw(image)
-            num = 0
-            # Clear area once, so framebuffer works?
-            draw.rectangle(self.vacc_partial_refresh_pixels, fill=0)
+            # Clear area once, so frame buffer works
+            draw.rectangle(self.vac_partial_refresh_pixels, fill=0)
             epd.display_1Gray(epd.getbuffer(image))
-            draw.rectangle(self.vacc_partial_refresh_pixels, fill=255)
+            draw.rectangle(self.vac_partial_refresh_pixels, fill=255)
             epd.display_1Gray(epd.getbuffer(image))
+            # This surely can be optimised. Do we skip the black box? Or the white Box?
 
-            while True:
+            while (int((current_time - start_time)) < duration_secs) and not self.cancel_file_exists():
                 # get fresh data
                 vaccinated_abs = self.databook.get_extrapolated_abs_doses()
                 string_2_line = f"{vaccinated_abs[0]}"
-
-                # draw.rectangle(self.vacc_partial_refresh_pixels, fill=0)
-                # epd.display_1Gray(epd.getbuffer(image))
-                draw.rectangle(self.vacc_partial_refresh_pixels, fill=255)
+                draw.rectangle(self.vac_partial_refresh_pixels, fill=255)
                 self.write_just_vac_number(draw, string_2_line)
                 epd.display_1Gray(epd.getbuffer(image))
                 logging.info(f"PARTIAL {vaccinated_abs[2]}")
                 current_time = time.time()
-                if (int((current_time - start_time) / 60) >= minutes) or self.cancel_file_exists():
-                    break
             epd.sleep()
         except IOError as e:
             logging.info(e)
@@ -88,22 +79,21 @@ class Paper:
             exit()
 
     def cancel_file_exists(self):
-        x = os.path.isfile("/home/pi/partial.cancel")
-        if x:
+        if os.path.isfile("/home/pi/partial.cancel"):
             print(f"Cancel file found")
-        return x
+            return True
+        return False
 
     def write_just_vac_number(self, draw, string_2_line):
         # Vaccinations
         draw.text((20, 60), string_2_line, font=self.font_huge, fill=0)
 
     def maybe_refresh_all_covid_data(self):
-
         vaccinated_abs = self.databook.get_extrapolated_abs_doses()
         munich_inz = self.databook.get_inz_munich()
         bavaria_inz = self.databook.get_inz_bavaria()
         logging.info(
-            f'Got data from databook vaccinated_abs {vaccinated_abs} munich_inz {munich_inz} bavaria_inz {bavaria_inz}')
+            f'Got data from databook vaccinated_abs ({vaccinated_abs[0]}, {vaccinated_abs[1]}, ...) munich_inz {munich_inz} bavaria_inz {bavaria_inz}')
         if not (vaccinated_abs[1] or munich_inz[1] or bavaria_inz[1]):
             # No changes
             logging.info(f"Data is the same. Skipping Display change")
@@ -122,9 +112,9 @@ class Paper:
 
         epd = self.epd
         try:
-            Himage = Image.new('L', (epd.height, epd.width),
-                               0xFF)  # 0xFF: clear the frame
-            draw = ImageDraw.Draw(Himage)
+            image = Image.new('L', (epd.height, epd.width),
+                              0xFF)  # 0xFF: clear the frame
+            draw = ImageDraw.Draw(image)
             self.write_current_time(epd, draw)
 
             # Vaccinations
@@ -144,8 +134,8 @@ class Paper:
                       font=self.font_very_big, fill=epd.GRAY4)
 
             # push to display
-            Himage.save(r'image.png')
-            epd.display_4Gray(epd.getbuffer_4Gray(Himage))
+            image.save(r'image.png')
+            epd.display_4Gray(epd.getbuffer_4Gray(image))
             epd.sleep()
         except IOError as e:
             logging.info(e)
