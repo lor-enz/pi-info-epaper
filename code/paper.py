@@ -60,7 +60,7 @@ class Paper:
             epd.display_1Gray(epd.getbuffer(image))
             # This surely can be optimised. Do we skip the black box? Or the white Box?
 
-            while (int((current_time - start_time)) < duration_secs) and not self.cancel_file_exists():
+            while (int((mytime.current_time() - start_time)) < duration_secs) and not self.cancel_file_exists():
                 # get fresh data
                 vaccinated_abs = self.databook.get_extrapolated_abs_doses()
                 string_2_line = f"{vaccinated_abs[0]}"
