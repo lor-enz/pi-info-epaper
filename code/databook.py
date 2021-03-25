@@ -1,4 +1,3 @@
-
 import os
 import logging
 import csv
@@ -9,8 +8,11 @@ import mytime as mytime
 import fetcher as fet
 
 LOOK_BACK_FOR_MEAN = 3
-OLDNESS_THRESHOLD_LARGE = 3600 * 36  # 3600 = 1 hour
+# 34 because: imagine it's a day old, during business hours it would just download new data. But at 34 hrs old,
+# it's 18:00 on the next day end of business hours. A good reason to download it anyway!
+OLDNESS_THRESHOLD_LARGE = 3600 * 34  # 3600 = 1 hour
 OLDNESS_THRESHOLD_SMALL = 3600 * 10  # 3600 = 1 hour
+DOWNLOAD_TIMEOUT = 60 * 11
 
 STORAGE_FILE = 'databook-storage.json'
 
@@ -36,12 +38,7 @@ def is_fresh_data_needed(freshness_timestamp, filename):
         is_needed = True
         reason = "No local data"
 
-    if is_needed:
-        logging.info(f"New {filename} data is needed. Reason {reason}")
-    else:
-        logging.info(
-            f"Download of {filename} can be skipped. Reason {reason}")
-    return is_needed
+    return is_needed, reason
 
 
 class Databook:
@@ -51,17 +48,29 @@ class Databook:
 
         self.inf_freshness_timestamp = 0
         self.vac_freshness_timestamp = 0
-        self.dl_attempt_timestamp = 0
+        self.inf_dl_attempt_timestamp = 0
+        self.vac_dl_attempt_timestamp = 0
         self.bay_vac = -1
         self.muc_inz = -1
         self.bay_inz = -1
         self.load_storage()
         self.maybe_download_data()
-        self.inf_freshness_timestamp = self.get_inf_last_update_timestamp()
-        self.vac_freshness_timestamp = self.get_vac_last_update_timestamp()
+        self.check_data_freshness()
         self.save_storage()
         self.inf_df = self.load_inf_dataframe()
         self.vac_df = self.load_vac_dataframe()
+
+    def check_data_freshness(self):
+        new_inf_ts = self.get_inf_last_update_timestamp()
+        new_vac_ts = self.get_vac_last_update_timestamp()
+
+        if new_inf_ts > self.inf_freshness_timestamp:
+            logging.info(f'NEW INF DATA. Freshness: {mytime.ts2dt(new_inf_ts)}')
+            self.inf_freshness_timestamp = new_inf_ts
+
+        if new_vac_ts > self.vac_freshness_timestamp:
+            logging.info(f'NEW VAC DATA. Freshness: {mytime.ts2dt(new_vac_ts)}')
+            self.vac_freshness_timestamp = new_vac_ts
 
     def load_storage(self):
         if not os.path.isfile(STORAGE_FILE):
@@ -71,17 +80,20 @@ class Databook:
         storage = retrieve(STORAGE_FILE)
         self.inf_freshness_timestamp = storage['inf_freshness_timestamp']
         self.vac_freshness_timestamp = storage['vac_freshness_timestamp']
+        self.inf_dl_attempt_timestamp = storage['inf_dl_attempt_timestamp']
+        self.vac_dl_attempt_timestamp = storage['vac_dl_attempt_timestamp']
         self.bay_vac = storage['bay_vac']
         self.bay_inz = storage['bay_inz']
         self.muc_inz = storage['muc_inz']
 
-        logging.info(f'Loaded {STORAGE_FILE}')
+        logging.debug(f'Loaded {STORAGE_FILE}')
 
     def save_storage(self):
         storage = {
             'inf_freshness_timestamp': int(self.inf_freshness_timestamp),
             'vac_freshness_timestamp': int(self.vac_freshness_timestamp),
-            'last_dl_attempt': int(self.dl_attempt_timestamp),
+            'inf_dl_attempt_timestamp': int(self.inf_dl_attempt_timestamp),
+            'vac_dl_attempt_timestamp': int(self.vac_dl_attempt_timestamp),
             'bay_vac': self.bay_vac,
             'bay_inz': self.bay_inz,
             'muc_inz': self.muc_inz
@@ -96,20 +108,30 @@ class Databook:
         return is_fresh_data_needed(self.vac_freshness_timestamp, fet.CSV_VAC['file'])
 
     def maybe_download_data(self):
-        seconds_since_last_attempt = mytime.current_time() - self.dl_attempt_timestamp
-        if seconds_since_last_attempt < 60 * 19:
-            logging.info(
-                f'Not attempting another download. Last one was {mytime.seconds2delta(seconds_since_last_attempt)} ago')
-            return
+        seconds_since_last_attempt_inc = mytime.current_time() - self.inf_dl_attempt_timestamp
+        seconds_since_last_attempt_vac = mytime.current_time() - self.vac_dl_attempt_timestamp
+        is_fresh_inf_data_needed = self.is_fresh_inf_data_needed()
+        is_fresh_vac_data_needed = self.is_fresh_vac_data_needed()
 
         fetcher = fet.Fetcher()
-        if self.is_fresh_inf_data_needed():
+
+        if is_fresh_inf_data_needed[0] and seconds_since_last_attempt_inc >= DOWNLOAD_TIMEOUT:
             fetcher.download_data(fet.CSV_INF)
-            logging.info(f"Downloaded new version of {fet.CSV_INF['file']}")
-        if self.is_fresh_vac_data_needed():
+            logging.info(f"Downloaded {fet.CSV_INF['file']}")
+            self.inf_dl_attempt_timestamp = mytime.current_time()
+        else:
+            delta = mytime.seconds2delta_hr(seconds_since_last_attempt_inc)
+            logging.info(
+                f'Skipping inf download. Last attempt {delta} ago. isNeeded: {is_fresh_inf_data_needed}')
+        if is_fresh_vac_data_needed[0] and seconds_since_last_attempt_vac >= DOWNLOAD_TIMEOUT:
             fetcher.download_data(fet.CSV_VAC)
-            logging.info(f"Downloaded new version of {fet.CSV_VAC['file']}")
-        self.dl_attempt_timestamp = mytime.current_time()
+            logging.info(f"Downloaded {fet.CSV_VAC['file']}")
+            self.vac_dl_attempt_timestamp = mytime.current_time()
+        else:
+            delta = mytime.seconds2delta_hr(seconds_since_last_attempt_vac)
+            logging.info(
+                f"Skipping vac download. Last attempt {delta} ago. isNeeded: {is_fresh_vac_data_needed}")
+
         fetcher.save_storage()  # TODO can we remove this because it's already saved in fetcher.download_data()... ?
 
     def get_inf_last_update_timestamp(self):
@@ -121,8 +143,9 @@ class Databook:
                 rows.append(row)
         date_string = rows[-1][34]
 
-        freshness_timestamp = mytime.dt2ts(time_string=date_string, time_format="%d.%m.%Y_%H:%M Uhr")
-        return freshness_timestamp
+        freshness_dt = mytime.string2datetime(time_string=date_string, time_format="%d.%m.%Y_%H:%M Uhr")
+        freshness_dt = freshness_dt.replace(hour=8)
+        return int(freshness_dt.timestamp())
 
     def get_vac_last_update_timestamp(self):
         df = pd.read_csv(fet.CSV_VAC['file'], sep=',',
@@ -186,7 +209,7 @@ class Databook:
         extra_vacs = self.extrapolate(mean, time_difference_secs)
         total_vacs = official_doses + extra_vacs
         total_vacs = '{:,}'.format(total_vacs).replace(',', '.')
-        log_string = f'Mean {mean} of {LOOK_BACK_FOR_MEAN} days, {"{:.1f}".format((time_difference_secs / 60 / 60))} hrs passed -> {extra_vacs} extra vacs + {official_doses} previous doses = {total_vacs}'
+        log_string = f'Mean {mean} of {LOOK_BACK_FOR_MEAN} days, {str(mytime.seconds2delta(time_difference_secs)).split(".")[0]} passed -> {extra_vacs} extra vacs + {official_doses} previous doses = {total_vacs}'
         # store it!
         changed = not (self.bay_vac == total_vacs)
         self.bay_vac = total_vacs

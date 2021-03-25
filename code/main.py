@@ -12,7 +12,7 @@ def maybe_9_min_update():
     book = db.Databook()
     paper = pap.Paper(book)
     paper.maybe_refresh_all_covid_data()
-    paper.partial_refresh_vac_for(9 * 60 + 30)
+    paper.partial_refresh_vac_for(9 * 60 + 15)
 
 
 # Press the green button in the gutter to run the script.
@@ -20,6 +20,6 @@ if __name__ == '__main__':
     import logging
     import mytime as mytime
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     logging.info(f'## Start at {mytime.current_time_hr()}')
     maybe_9_min_update()

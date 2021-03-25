@@ -21,7 +21,7 @@ def ts2dt(timestamp):
     return dt.fromtimestamp(timestamp, tz)
 
 
-def dt2ts(time_string, time_format="%Y-%m-%d_%H:%M", timezone_name=TZ_GERMANY):
+def string2timestamp(time_string, time_format="%Y-%m-%d_%H:%M", timezone_name=TZ_GERMANY):
     logging.debug(f'time_string {time_string} time_format {time_format} timezone_name {timezone_name}')
     dt_obj = datetime.datetime.strptime(time_string, time_format)
     timezone_obj = pytz.timezone(timezone_name)
@@ -29,8 +29,17 @@ def dt2ts(time_string, time_format="%Y-%m-%d_%H:%M", timezone_name=TZ_GERMANY):
     return dt.timestamp(dt_obj)
 
 
+def string2datetime(time_string, time_format="%Y-%m-%d_%H:%M", timezone_name=TZ_GERMANY):
+    return ts2dt(string2timestamp(time_string, time_format, timezone_name))
+
+
 def seconds2delta(seconds):
     return datetime.timedelta(seconds=seconds)
+
+
+# Human readable delta, without milliseconds (/microseconds?)
+def seconds2delta_hr(seconds):
+    return str(datetime.timedelta(seconds=seconds)).split(".")[0]
 
 
 def is_business_hours(given_timestamp=0):
@@ -41,7 +50,7 @@ def is_business_hours(given_timestamp=0):
 
     if dt_object.hour == 18 and dt_object.minute == 00:
         return True
-    return 7 <= dt_object.hour <= 18
+    return 7 < dt_object.hour < 18
 
 
 # Returns the seconds of 'business time' that has passed between two timestamps
@@ -80,7 +89,8 @@ def business_time_since(timestamp_a, timestamp_b=0, business_time_start=8, busin
     # per full day only count 10 hours
     result = (10 * 60 * 60) * full_days + partial_day
 
-    logging.debug(f"Input time from {dt_a}  to  {dt_b} -> full days: {full_days} + seconds of remaning day {partial_day} = {result} secs or {datetime.timedelta(seconds=result)}")
+    logging.debug(
+        f"Input time from {dt_a}  to  {dt_b} -> full days: {full_days} + seconds of remaning day {partial_day} = {result} secs or {datetime.timedelta(seconds=result)}")
     return result
 
 

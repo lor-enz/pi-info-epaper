@@ -5,8 +5,6 @@ import requests
 
 import mytime as mytime
 
-logging.basicConfig(level=logging.INFO)
-
 CSV_VAC = {
     'url': 'https://raw.githubusercontent.com/ard-data/2020-rki-impf-archive/master/data/9_csv_v2/region_BY.csv',
     'file': 'vac.csv',
@@ -44,10 +42,9 @@ def inf_file_path():
 class Fetcher:
 
     def __init__(self):
-        self.load_storage()
-
-        self.vac_download_timestamp = 0
         self.inf_download_timestamp = 0
+        self.vac_download_timestamp = 0
+        self.load_storage()
 
     def __str__(self):
         return f'vac.csv downloaded at: {self.inf_download_timestamp}  ' \
@@ -62,7 +59,7 @@ class Fetcher:
         self.inf_download_timestamp = storage[CSV_INF['key']]
         self.vac_download_timestamp = storage[CSV_VAC['key']]
 
-        logging.info(f'Loaded {STORAGE_FILE}')
+        logging.debug(f'Loaded {STORAGE_FILE}')
 
     def save_storage(self):
         storage = {

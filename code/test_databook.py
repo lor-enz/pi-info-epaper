@@ -33,6 +33,21 @@ class TestDatabook(unittest.TestCase):
         self.assertGreater(float(all_doses[0].replace('.', '')), 1700000)
         self.assertLess(float(all_doses[0].replace('.', '')), 30 * 1000000)
 
+    def test_last_update_times(self):
+        import mytime as mytime
+        import databook as db
+        book = db.Databook()
+        inf_ts = book.get_inf_last_update_timestamp()
+        vac_ts = book.get_vac_last_update_timestamp()
+        print(f'inf timestamp {inf_ts} -> {mytime.ts2dt(inf_ts)}')
+        print(f'vac timestamp {vac_ts} -> {mytime.ts2dt(vac_ts)}')
+
+        self.assertEqual(8, mytime.ts2dt(vac_ts).hour)
+        self.assertEqual(8, mytime.ts2dt(inf_ts).hour)
+
+
+
+
 
 if __name__ == "__main__":
     unittest.main()

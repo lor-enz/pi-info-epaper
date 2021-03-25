@@ -24,7 +24,7 @@ class Paper:
         return f"Paper class, what should I print?"
 
     def __init__(self, databook):
-        logging.info(f'Init Paper at {mytime.current_time_hr()}')
+        logging.debug(f'Init Paper at {mytime.current_time_hr()}')
         self.databook = databook
         self.epd = epd3in7.EPD()
 
