@@ -25,6 +25,92 @@ The code for driving the e-paper is oriented around the official documentation f
 
 The code style isn't the best since I haven't written python code in years. But I'm doing my best to improve it!
 
+
+### Setup
+<details><summary>Setup</summary>
+<p>
+
+ Use a clean ubuntu installation
+
+ How about upgrading first?
+
+```sh
+sudo apt update && sudo apt upgrade
+```
+
+
+```sh
+sudo raspi-config
+```
+-> 3 Interface Options
+-> P4 SPI
+-> Yes
+-> Ok	
+-> Finish
+
+
+```sh
+wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.60.tar.gz
+tar zxvf bcm2835-1.60.tar.gz 
+cd bcm2835-1.60/
+sudo ./configure
+sudo make
+sudo make check
+sudo make install
+```
+
+```sh
+cd ~
+sudo apt install wiringpi
+wget https://project-downloads.drogon.net/wiringpi-latest.deb
+sudo dpkg -i wiringpi-latest.deb
+gpio -v
+```
+
+```sh
+sudo apt update
+sudo apt install -y python-pip python-pil python-numpy
+sudo pip install RPi.GPIO spidev
+
+sudo apt update
+sudo apt install -y python3-pip python3-pil python3-numpy
+sudo pip3 install RPi.GPIO spidev
+```
+
+```sh
+sudo apt install -y git
+```
+
+How about some apt maintenance now?
+
+```sh
+sudo apt clean && sudo apt autoclean && sudo apt autoremove
+```
+
+If you want to try the waveshare example code first:
+
+```sh
+cd ~
+git clone https://github.com/waveshare/e-Paper
+
+```
+Grab the code from this repo and install dependencies. Install pandas like shown below, it's the easiest solution.
+
+```sh
+cd ~
+git clone https://github.com/lor-enz/pi-info-epaper
+pip3 install pytz
+sudo apt install -y python3-pandas
+```
+
+Run it with python3
+
+</p>
+</details>
+
+
+
+
 ## Future uses
 
 The information I want to have displayed is likely to change in the future. Other ideas I have are:
