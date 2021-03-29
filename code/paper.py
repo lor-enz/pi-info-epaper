@@ -18,7 +18,7 @@ if os.path.exists(libdir):
 
 
 class Paper:
-    vac_partial_refresh_pixels = (26, 77, 433, 149)
+    vac_partial_refresh_pixels = (23, 77, 433, 149)
 
     def __str__(self):
         return f"Paper class, what should I print?"
@@ -53,12 +53,9 @@ class Paper:
             epd.Clear(0xFF, 1)
             image = Image.new('1', (epd.height, epd.width), 255)
             draw = ImageDraw.Draw(image)
-            # Clear area once, so frame buffer works
+            # Draw black box, so frame buffer works (otherwise it assumes white area)
             draw.rectangle(self.vac_partial_refresh_pixels, fill=0)
             epd.display_1Gray(epd.getbuffer(image))
-            draw.rectangle(self.vac_partial_refresh_pixels, fill=255)
-            epd.display_1Gray(epd.getbuffer(image))
-            # This surely can be optimised. Do we skip the black box? Or the white Box?
 
             while (int((mytime.current_time() - start_time)) < duration_secs) and not self.cancel_file_exists():
                 # get fresh data
