@@ -23,10 +23,21 @@ class Paper:
     def __str__(self):
         return f"Paper class, what should I print?"
 
-    def __init__(self, databook):
+    def flip_partial(self, paper_w, paper_h):
+        new_x_e = paper_w - self.vac_partial_refresh_pixels[0]
+        new_y_e = paper_h - self.vac_partial_refresh_pixels[1]
+        new_x_s = paper_w -  self.vac_partial_refresh_pixels[2]
+        new_y_s = paper_h -  self.vac_partial_refresh_pixels[3]
+        return new_x_s, new_y_s, new_x_e, new_y_e
+
+    def __init__(self, databook, flip=False):
         logging.debug(f'Init Paper at {mytime.current_time_hr()}')
-        self.databook = databook
         self.epd = epd3in7.EPD()
+        self.flip = flip
+        self.databook = databook
+        # Make sure to swap height and width! Default is portrait
+        if self.flip:
+            self.vac_partial_refresh_pixels = self.flip_partial(self.epd.height, self.epd.width)
 
         self.font_huge = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 90)
         self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 85)
@@ -111,6 +122,7 @@ class Paper:
             image = Image.new('L', (epd.height, epd.width),
                               0xFF)  # 0xFF: clear the frame
             draw = ImageDraw.Draw(image)
+
             self.write_current_time(epd, draw)
 
             # Vaccinations
@@ -131,6 +143,8 @@ class Paper:
 
             # push to display
             image.save(r'image.png')
+            if self.flip:
+                image = image.transpose(Image.ROTATE_180)
             epd.display_4Gray(epd.getbuffer_4Gray(image))
             epd.sleep()
         except IOError as e:
