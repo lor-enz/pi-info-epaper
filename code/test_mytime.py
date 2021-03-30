@@ -20,7 +20,8 @@ class TestTimeTool(unittest.TestCase):
         self.assertEqual(True, tt.is_business_hours(1616482800))   # 8:00
         self.assertEqual(True, tt.is_business_hours(1616518800))   # 18:00
         self.assertEqual(False, tt.is_business_hours(1616518860))  # 18:01
-
+        self.assertEqual(True, tt.is_business_hours(1617084300))   # 8:05 DST
+        self.assertEqual(False, tt.is_business_hours(1617082200))  # 7:30 DST
 
 
     def test_current_time(self):
@@ -51,7 +52,18 @@ class TestTimeTool(unittest.TestCase):
         self.assertEqual(0, result)
 
         result = business_time_since(tt.string2timestamp("2021-03-10_17:55"), tt.string2timestamp("2021-03-10_18:05"))
-        self.assertEqual(5*60, result)
+        self.assertEqual(5 * 60, result)
+
+        result = business_time_since(tt.string2timestamp("2021-03-30_06:00"), tt.string2timestamp("2021-03-30_08:30"))
+        self.assertEqual(30 * 60, result)
+
+        result = business_time_since(tt.string2timestamp("2021-03-30_06:00"), tt.string2timestamp("2021-03-30_18:30"))
+        self.assertEqual(10 * 60 * 60, result)
+
+        # May 30th 6:00 -> 10:00
+        result = business_time_since(1617076800, 1617091200)
+        self.assertEqual(2 * 60 * 60, result)
+
 
 
 if __name__ == "__main__":
