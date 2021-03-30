@@ -11,8 +11,9 @@ def maybe_9_min_update(flip):
     import paper as pap
     book = db.Databook()
     paper = pap.Paper(book, flip)
-    paper.maybe_refresh_all_covid_data()
-    paper.partial_refresh_vac_for(9 * 60 + 15)
+    paper.clear()
+    paper.maybe_refresh_all_covid_data(write_vac=False)
+    paper.partial_refresh_vac_for(9 * 60 + 15, clear_vac=False)
 
 
 # Press the green button in the gutter to run the script.

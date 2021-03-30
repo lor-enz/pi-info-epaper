@@ -17,28 +17,33 @@ if os.path.exists(libdir):
     sys.path.append(libdir)
 
 
+def flip_partial(partial, paper_w, paper_h):
+    if len(partial) == 2:
+        return paper_w - partial[0], paper_h - partial[1]
+    elif len(partial) == 4:
+        new_x_e = paper_w - partial[0]
+        new_y_e = paper_h - partial[1]
+        new_x_s = paper_w - partial[2]
+        new_y_s = paper_h - partial[3]
+        return new_x_s, new_y_s, new_x_e, new_y_e
+
+
 class Paper:
-    vac_partial_refresh_pixels = (23, 77, 433, 149)
 
     def __str__(self):
         return f"Paper class, what should I print?"
-
-    def flip_partial(self, paper_w, paper_h):
-        new_x_e = paper_w - self.vac_partial_refresh_pixels[0]
-        new_y_e = paper_h - self.vac_partial_refresh_pixels[1]
-        new_x_s = paper_w -  self.vac_partial_refresh_pixels[2]
-        new_y_s = paper_h -  self.vac_partial_refresh_pixels[3]
-        return new_x_s, new_y_s, new_x_e, new_y_e
 
     def __init__(self, databook, flip=False):
         logging.debug(f'Init Paper at {mytime.current_time_hr()}')
         self.epd = epd3in7.EPD()
         self.flip = flip
         self.databook = databook
-        # Make sure to swap height and width! Default is portrait
+        self.partial_text = (20, 60)
+        self.partial_rect = (23, 77, 433, 149)
         if self.flip:
-            self.vac_partial_refresh_pixels = self.flip_partial(self.epd.height, self.epd.width)
-
+            # Make sure to swap height and width! Default is portrait
+            self.partial_rect = flip_partial(self.partial_rect, self.epd.height, self.epd.width)
+        print(f'partial_rect: {self.partial_rect}')
         self.font_huge = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 90)
         self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 85)
         self.font_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 45)
@@ -51,7 +56,7 @@ class Paper:
         draw.text((0, 0), string_to_display, font=self.font_very_small, fill=epd.GRAY4)
         logging.info(f"Add to screen {string_to_display}")
 
-    def partial_refresh_vac_for(self, duration_secs):
+    def partial_refresh_vac_for(self, duration_secs, clear_vac=True):
         if not mytime.is_business_hours():
             logging.info(f'Skipping partial refresh because outside business hours {mytime.current_time_hr()}')
             return
@@ -62,18 +67,28 @@ class Paper:
         try:
             epd.init(1)  # 1 Gary mode
             epd.Clear(0xFF, 1)
-            image = Image.new('1', (epd.height, epd.width), 255)
-            draw = ImageDraw.Draw(image)
-            # Draw black box, so frame buffer works (otherwise it assumes white area)
-            draw.rectangle(self.vac_partial_refresh_pixels, fill=0)
-            epd.display_1Gray(epd.getbuffer(image))
+
+            # image = Image.new('1', (epd.height, epd.width), 255)
+            #
+            # draw = ImageDraw.Draw(image)
+            if clear_vac:
+                image = Image.new('1', (epd.height, epd.width), 255)
+                draw = ImageDraw.Draw(image)
+                draw.rectangle(self.partial_rect, fill=0)
+                epd.display_1Gray(epd.getbuffer(image))
+                draw.rectangle(self.partial_rect, fill=255)
+                epd.display_1Gray(epd.getbuffer(image))
 
             while (int((mytime.current_time() - start_time)) < duration_secs) and not self.cancel_file_exists():
-                # get fresh data
+                image = Image.new('1', (epd.height, epd.width), 255)
+                draw = ImageDraw.Draw(image)
+
                 vaccinated_abs = self.databook.get_extrapolated_abs_doses()
                 string_2_line = f"{vaccinated_abs[0]}"
-                draw.rectangle(self.vac_partial_refresh_pixels, fill=255)
-                self.write_just_vac_number(draw, string_2_line)
+                draw.rectangle(self.partial_rect, fill=255)
+                draw.text(self.partial_text, string_2_line, font=self.font_huge, fill=0)
+                if self.flip:
+                    image = image.rotate(180, expand=1)
                 epd.display_1Gray(epd.getbuffer(image))
                 logging.info(f"PARTIAL {vaccinated_abs[2]}")
             epd.sleep()
@@ -86,16 +101,12 @@ class Paper:
             exit()
 
     def cancel_file_exists(self):
-        if os.path.isfile("/home/pi/partial.cancel"):
-            print(f"Cancel file found")
+        if os.path.isfile("/home/pi/partial.cancel") or os.path.isfile("~/partial.cancel"):
+            logging.info(f"Cancel file found")
             return True
         return False
 
-    def write_just_vac_number(self, draw, string_2_line):
-        # Vaccinations
-        draw.text((20, 60), string_2_line, font=self.font_huge, fill=0)
-
-    def maybe_refresh_all_covid_data(self):
+    def maybe_refresh_all_covid_data(self, write_vac=True):
         vaccinated_abs = self.databook.get_extrapolated_abs_doses()
         munich_inz = self.databook.get_inz_munich()
         bavaria_inz = self.databook.get_inz_bavaria()
@@ -128,7 +139,8 @@ class Paper:
             # Vaccinations
             draw.text((20, 40), string_1_line,
                       font=self.font_medium, fill=epd.GRAY4)
-            self.write_just_vac_number(draw, string_2_line)
+            if write_vac:
+                draw.text(self.partial_text, string_2_line, font=self.font_huge, fill=0)
             # Inz BY
             draw.text((20, 170), string_bottom_left_1,
                       font=self.font_medium, fill=epd.GRAY4)
