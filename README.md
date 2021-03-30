@@ -6,38 +6,59 @@ The code is intended to run as a cronjob every 10 minutes.
 It will download Germanys current information regarding covid-19 infections and vaccinations and display them on the screen. Updating some of it continuously.
 I put it up on the fridge in my kitchen which makes for a convenient way to get a sense for the numbers.
 
-## What it displays
+## What is does
+It displays information on the current covid-19 situation in Bavaria and Munich.
 
 ![pi-info-epaper](https://user-images.githubusercontent.com/33176142/111890186-6d5a0980-89e7-11eb-8aa8-7fe316021a20.jpg)
 
-- Vaccination doses given out in Bavaria. Extrapolated to the current moment according to some assumptions.
-- The Inzidenzwert of Bavaria
+- Large number in the middle: Vaccination doses given out in Bavaria in real time (changes as fast as the e-paper allows, so about every 5 seconds) Real time means it's extrapolated to the current moment according to some assumptions. The official number only specify vaccinations from the end of the previous day.
+- The Inzidenzwert of Bavaria 
 - The Inzidenzwert of Munich, Bavaria
 
-## About the code
+Inzidenzwert = (New infections per 100k from the last 7 days)
+## Technologies and setup
 
-### waveshare e-paper
+
+### Hardware 
+
+The hardware probably costs less than 50€ 
+
+- **[Raspberry Pi zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/)** with pins (wifi is A LOT simpler)
+
+- **[Waveshare 3.7inch e-Paper e-Ink Display HAT For Raspberry Pi, 480*280, Black / White, 4 Grey Scales](https://www.aliexpress.com/item/1005001408167714.html?spm=a2g0s.9042311.0.0.1e2b4c4dAKdgvw)** The HAT is the easy solution with the e-paper and controller combined into one element.
+*Alternatively* get the e-paper and the controller separately. This allows the e-paper being flat against a surface. The combined element with the Raspi is 2cm thick. The combined element is easier to set up since it fits together sluggly :)
+
+- *Alternative:* **[Waveshare 3.7inch e-Paper e-Ink Raw Display with 480×280 Resolution Black/White 4 Grey Scales ](https://www.aliexpress.com/item/1005001587973205.html?spm=a2g0s.9042311.0.0.1e2b4c4dAKdgvw)**
+ and separate **[Universal e-Paper Raw Panel Driver HAT SPI for Waveshare Various E-ink Module](https://www.aliexpress.com/item/32834283583.html?spm=a2g0s.9042311.0.0.1e2b4c4dAKdgvw)**
+
+- **A micro SD card with 4GB in size or larger**
+
+- **A micro USB cable and somewhere to plug it into**
+
+### Software
 
 The code for driving the e-paper is oriented around the official documentation from
 [github.com/waveshare/e-Paper](https://github.com/waveshare/e-Paper) and the [waveshare e-paper wiki page](https://www.waveshare.com/wiki/3.7inch_e-Paper_HAT)
 
-### My code
 
-The code style isn't the best since I haven't written python code in years. But I'm doing my best to improve it!
+
+My code may be a bit messy, since I haven't written lots of written python code in a while. But I'm doing my best to improve it!
 
 
 ### Setup
-<details><summary>Setup</summary>
+
+Setup the raspi for the waveshare hardware, by following the instructions on the [waveshare e-paper wiki page](https://www.waveshare.com/wiki/3.7inch_e-Paper_HAT) which is always up to date or follow the same instructions here with minor changes and comments. Maybe follow along both? ;)
+
+<details><summary>Configure the raspi for the waveshare hardware and code</summary>
 <p>
 
- Use a clean ubuntu installation
+ Use a clean ubuntu installation and setup headless wifi for easy access over ssh.
 
- How about upgrading first?
+ Upgrading sounds like a good first thing to do!
 
 ```sh
 sudo apt update && sudo apt upgrade
 ```
-
 
 ```sh
 sudo raspi-config
@@ -66,6 +87,7 @@ wget https://project-downloads.drogon.net/wiringpi-latest.deb
 sudo dpkg -i wiringpi-latest.deb
 gpio -v
 ```
+if gpio shows a version number it's installed correctly :)
 
 ```sh
 sudo apt update
@@ -77,24 +99,27 @@ sudo apt install -y python3-pip python3-pil python3-numpy
 sudo pip3 install RPi.GPIO spidev
 ```
 
-```sh
-sudo apt install -y git
-```
-
 How about some apt maintenance now?
 
 ```sh
 sudo apt clean && sudo apt autoclean && sudo apt autoremove
 ```
 
-If you want to try the waveshare example code first:
 
+Lastly install git to clone this or the official repo.
 ```sh
-cd ~
-git clone https://github.com/waveshare/e-Paper
-
+sudo apt install -y git
 ```
-Grab the code from this repo and install dependencies. Install pandas like shown below, it's the easiest solution.
+
+You can try the waveshare example code if you want. It has some nice demo code. Instructions and code are on their [github page](https://github.com/waveshare/e-Paper) .
+
+</p>
+</details>
+
+<details><summary>Setting up my code</summary>
+<p>
+
+The following commaned clones this repo and installs dependencies. I recommend installing pandas like shown below with *apt*. Other ways (pip or conda) will probably lead to issues.
 
 ```sh
 cd ~
@@ -103,13 +128,21 @@ pip3 install pytz
 sudo apt install -y python3-pandas
 ```
 
-Run it with python3
+figure out where your python3 is install with ```which python3``` and where you cloned the repo. 
+Then adapt the script.sh in the root folder of this repo if necessary. 
+Run it to see if it's working. You might need to cancel the Partial Update with Ctrl+C since it run for about 9 minutes.
+
+Create a logfile by runnning ```touch ~/info-screen.log```
+
+then configure a cronjob by by running ```crontab -e```
+and add the following line:
+
+```*/10 * * * * ~/pi-info-epaper/script.sh >> ~/info-screen.log 2>&1```
+
+which runs the script every 10 minutes
 
 </p>
 </details>
-
-
-
 
 ## Future uses
 
