@@ -43,7 +43,6 @@ class Paper:
         if self.flip:
             # Make sure to swap height and width! Default is portrait
             self.partial_rect = flip_partial(self.partial_rect, self.epd.height, self.epd.width)
-        print(f'partial_rect: {self.partial_rect}')
         self.font_huge = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 90)
         self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 85)
         self.font_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 45)
@@ -57,10 +56,6 @@ class Paper:
         logging.info(f"Add to screen {string_to_display}")
 
     def partial_refresh_vac_for(self, duration_secs, clear_vac=True):
-        if not mytime.is_business_hours():
-            logging.info(f'Skipping partial refresh because outside business hours {mytime.current_time_hr()}')
-            return
-
         start_time = mytime.current_time()
         epd = self.epd
 

@@ -9,11 +9,17 @@ def maybe_9_min_update(flip):
     # Press Ctrl+F8 to toggle the breakpoint.
     import databook as db
     import paper as pap
+    import mytime as mytime
     book = db.Databook()
     paper = pap.Paper(book, flip)
-    paper.clear()
-    paper.maybe_refresh_all_covid_data(write_vac=False)
-    paper.partial_refresh_vac_for(9 * 60 + 15, clear_vac=False)
+
+    if mytime.is_business_hours():
+        paper.maybe_refresh_all_covid_data(write_vac=False)
+        paper.partial_refresh_vac_for(9 * 60 + 10, clear_vac=False)
+    else:
+        paper.maybe_refresh_all_covid_data(write_vac=True)
+        logging.info(f'Skipping partial refresh because outside business hours {mytime.current_time_hr()}')
+
 
 
 # Press the green button in the gutter to run the script.
