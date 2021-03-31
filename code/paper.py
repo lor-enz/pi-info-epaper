@@ -28,6 +28,21 @@ def flip_partial(partial, paper_w, paper_h):
         return new_x_s, new_y_s, new_x_e, new_y_e
 
 
+layout = {
+    'time': (0, 0),
+
+    'text_vac': (20, 40),
+    'num_vac': (20, 60),
+    'partial_rect': (23, 77, 433, 149),
+
+    'text_bav_inz': (20, 170),
+    'num_bav_inz': (20, 190),
+
+    'text_muc_inz': (293, 170),
+    'num_muc_inz': (293, 190),
+}
+
+
 class Paper:
 
     def __str__(self):
@@ -38,7 +53,6 @@ class Paper:
         self.epd = epd3in7.EPD()
         self.flip = flip
         self.databook = databook
-        self.partial_text = (20, 60)
         self.partial_rect = (23, 77, 433, 149)
         if self.flip:
             # Make sure to swap height and width! Default is portrait
@@ -81,7 +95,7 @@ class Paper:
                 vaccinated_abs = self.databook.get_extrapolated_abs_doses()
                 string_2_line = f"{vaccinated_abs[0]}"
                 draw.rectangle(self.partial_rect, fill=255)
-                draw.text(self.partial_text, string_2_line, font=self.font_huge, fill=0)
+                draw.text(layout['num_vac'], string_2_line, font=self.font_huge, fill=0)
                 if self.flip:
                     image = image.rotate(180, expand=1)
                 epd.display_1Gray(epd.getbuffer(image))
@@ -132,20 +146,20 @@ class Paper:
             self.write_current_time(epd, draw)
 
             # Vaccinations
-            draw.text((20, 40), string_1_line,
+            draw.text(layout['text_vac'], string_1_line,
                       font=self.font_medium, fill=epd.GRAY4)
             if write_vac:
-                draw.text(self.partial_text, string_2_line, font=self.font_huge, fill=0)
+                draw.text(self.partial_num, string_2_line, font=self.font_huge, fill=0)
             # Inz BY
-            draw.text((20, 170), string_bottom_left_1,
+            draw.text(layout['text_bav_inz'], string_bottom_left_1,
                       font=self.font_medium, fill=epd.GRAY4)
-            draw.text((20, 190), string_bottom_left_2,
+            draw.text(layout['num_bav_inz'], string_bottom_left_2,
                       font=self.font_very_big, fill=epd.GRAY4)
 
             # Inz MUC
-            draw.text((293, 170), string_bottom_right_1,
+            draw.text(layout['text_muc_inz'], string_bottom_right_1,
                       font=self.font_medium, fill=epd.GRAY4)
-            draw.text((293, 190), string_bottom_right_2,
+            draw.text(layout['num_muc_inz'], string_bottom_right_2,
                       font=self.font_very_big, fill=epd.GRAY4)
 
             # push to display
