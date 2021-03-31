@@ -29,17 +29,17 @@ def flip_partial(partial, paper_w, paper_h):
 
 
 layout = {
-    'time': (0, 0),
+    'time': (430, 0),
 
-    'text_vac': (20, 40),
-    'num_vac': (20, 60),
-    'partial_rect': (23, 77, 433, 149),
+    'text_vac': (45, 15),
+    'num_vac': (40, 35),
+    'partial_rect': (13, 52, 423, 124),
 
-    'text_bav_inz': (20, 170),
-    'num_bav_inz': (20, 190),
+    'text_bav_inz': (25, 170-15),
+    'num_bav_inz': (10, 190-10),
 
-    'text_muc_inz': (293, 170),
-    'num_muc_inz': (293, 190),
+    'text_muc_inz': (278, 170-15),
+    'num_muc_inz': (263, 190-10),
 }
 
 
@@ -66,7 +66,7 @@ class Paper:
 
     def write_current_time(self, epd, draw):
         string_to_display = f'{mytime.current_time_hr("%H:%M")}+'
-        draw.text((0, 0), string_to_display, font=self.font_very_small, fill=epd.GRAY4)
+        draw.text(layout['time'], string_to_display, font=self.font_very_small, fill=epd.GRAY4)
         logging.info(f"Add to screen {string_to_display}")
 
     def partial_refresh_vac_for(self, duration_secs, clear_vac=True):
