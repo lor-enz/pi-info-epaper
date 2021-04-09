@@ -149,7 +149,7 @@ class Paper:
             draw.text(layout['text_vac'], string_1_line,
                       font=self.font_medium, fill=epd.GRAY4)
             if write_vac:
-                draw.text(self.partial_num, string_2_line, font=self.font_huge, fill=0)
+                draw.text(layout['num_vac'], string_2_line, font=self.font_huge, fill=0)
             # Inz BY
             draw.text(layout['text_bav_inz'], string_bottom_left_1,
                       font=self.font_medium, fill=epd.GRAY4)
