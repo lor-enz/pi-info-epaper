@@ -1,6 +1,7 @@
 import os
 import logging
 import csv
+import math
 import numpy as np
 import pandas as pd
 
@@ -15,6 +16,34 @@ OLDNESS_THRESHOLD_SMALL = 3600 * 10  # 3600 = 1 hour
 DOWNLOAD_TIMEOUT = 60 * 11
 
 STORAGE_FILE = 'databook-storage.json'
+
+
+def week_day_string(weekday):
+    if weekday == 0:
+        return 'Mon'
+    elif weekday == 1:
+        return 'Tue'
+    elif weekday == 2:
+        return 'Wed'
+    elif weekday == 3:
+        return 'Thu'
+    elif weekday == 4:
+        return 'Fri'
+    elif weekday == 5:
+        return 'Sat'
+    elif weekday == 6:
+        return 'Sun'
+    else:
+        return 'other'
+
+
+def is_weekend(weekday):
+    if weekday == 5:
+        return True
+    elif weekday == 6:
+        return True
+    else:
+        return False
 
 
 def is_fresh_data_needed(freshness_timestamp, filename):
@@ -165,14 +194,77 @@ class Databook:
         csv_path = fet.CSV_VAC['file']
         df = pd.read_csv(
             csv_path, sep=',', index_col=0, parse_dates=True)
-        df = df[['dosen_kumulativ', 'impf_inzidenz_dosen']]
-        df['dosen_kumulativ_differenz_zum_vortag'] = df.dosen_kumulativ - \
-                                                     df.dosen_kumulativ.shift(1)
 
-        df['dosen_kumulativ_differenz_zum_vortag'] = df['dosen_kumulativ_differenz_zum_vortag'].fillna(
-            0)
-        df = df.astype({'dosen_kumulativ_differenz_zum_vortag': 'int64'})
+        df = df[['publication_date', 'dosen_kumulativ']]
+        df = self.add_dif_column(df)
+        df = self.fix_missing_days(df)
+        self.fix_nan_dosen(df)
+        self.add_weekday_stuff(df)
+        df = self.add_shots_sum(df)
         return df
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # # # # # #                                                                                 # # # # # #
+    # # # # # #                            Datascience Prep                                     # # # # # #
+    # # # # # #                                                                                 # # # # # #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    def add_dif_column(self, df):
+        df['shots_today'] = df.dosen_kumulativ - df.dosen_kumulativ.shift(1)
+        df['shots_today'] = df['shots_today'].fillna(0)
+        return df.astype({'shots_today': 'int64'})
+
+    def fix_missing_days(self, df):
+        # fill in the dates
+        idx = pd.date_range(start='2020-12-26', end=df.index.max())
+
+        df = df.reindex(idx)
+
+        # Create new index column because that's waay easier than having the date column be the index
+        df = df.reset_index()
+        df.at[0, 'dosen_kumulativ'] = 0
+        df.at[0, 'shots_today'] = 0
+        df.at[1, 'shots_today'] = df.iloc[1, :]['dosen_kumulativ']
+
+        return df.rename(columns={'index': 'date'})
+
+    def fix_nan_dosen(self, df):
+        i = 0
+        while i < len(df.index):
+            row = df.iloc[i, :]
+            # print(f'{row} with type: {type(row)}')
+            if pd.isnull(row['shots_today']):
+                j = 1
+                new_row = df.iloc[i + j, :]
+                while pd.isnull(new_row['shots_today']):
+                    j = j + 1
+                    new_row = df.iloc[i + j, :]
+                next_valid_row = df.iloc[i + j, :]
+                quotient = next_valid_row['shots_today'] / (j + 1)
+                df.at[i + j, 'shots_today'] = quotient
+                for to_change in range(i, i + j):
+                    df.at[to_change, 'shots_today'] = quotient
+                i = i + j
+            else:
+                i = i + 1
+
+    def add_weekday_stuff(self, df):
+        df['weekday'] = df.date.dt.dayofweek
+        df['is_weekend'] = df.apply(lambda x: is_weekend(x['weekday']), axis=1)
+        df['weekday_name'] = df.apply(lambda x: week_day_string(x['weekday']), axis=1)
+        df['calendar_week'] = df.date.dt.week
+
+    def add_shots_sum(self, df):
+        df['shots_sum'] = 0
+        df['shots_sum'] = df['shots_today'].cumsum().round()
+        df['shots_sum'] = df.shots_sum.astype(int) # hmm
+        return df
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # # # # # #                                                                                 # # # # # #
+    # # # # # #                            Datascience get Data                                 # # # # # #
+    # # # # # #                                                                                 # # # # # #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def get_inz_bavaria(self):
         the_one_row = self.inf_df[self.inf_df['county'] == 'SK München']
@@ -196,7 +288,7 @@ class Databook:
         return inz, changed
 
     def get_official_abs_doses(self):
-        new_value = self.vac_df.tail(1)['dosen_kumulativ'].values[0]
+        new_value = self.vac_df.tail(1)['shots_sum'].values[0]
         return new_value
 
     def get_extrapolated_abs_doses(self):
@@ -205,11 +297,12 @@ class Databook:
 
         time_difference_secs = mytime.business_time_since(official_doses_timestamp)
 
-        mean = self.get_average_daily_vacs_of_last_days(LOOK_BACK_FOR_MEAN)
+        is_weekend = self.is_next_day_weekend(self.vac_df)
+        mean = self.guess_next_days_vacs(self.vac_df, is_weekend)
         extra_vacs = self.extrapolate(mean, time_difference_secs)
         total_vacs = official_doses + extra_vacs
         total_vacs = '{:,}'.format(total_vacs).replace(',', '.')
-        log_string = f'Mean {mean} of {LOOK_BACK_FOR_MEAN} days, {str(mytime.seconds2delta(time_difference_secs)).split(".")[0]} passed -> {extra_vacs} extra vacs + {official_doses} previous doses = {total_vacs}'
+        log_string = f'Mean {mean} of {LOOK_BACK_FOR_MEAN} days (weekend: {is_weekend}), {str(mytime.seconds2delta(time_difference_secs)).split(".")[0]} passed -> {extra_vacs} extra vacs + {official_doses} previous doses = {total_vacs}'
         # store it!
         changed = not (self.bay_vac == total_vacs)
         self.bay_vac = total_vacs
@@ -221,7 +314,16 @@ class Databook:
         extra_vacs = int(daily_mean * progress)
         return extra_vacs
 
-    def get_average_daily_vacs_of_last_days(self, days_to_look_back):
-        mean = self.vac_df.tail(days_to_look_back)[
-            'dosen_kumulativ_differenz_zum_vortag'].values.mean()
-        return int(mean)
+    def guess_next_days_vacs(self, df, is_weekend):
+        df_filtered = df[df['is_weekend'] == is_weekend]
+        mean = df_filtered.tail(LOOK_BACK_FOR_MEAN)['shots_today'].values.mean()
+        return math.ceil(mean)
+
+    def is_next_day_weekend(self, df):
+        next_day = df.tail(1).date + pd.DateOffset(1)
+        if next_day.dt.dayofweek.values[0] > 4:
+            return True
+        else:
+            return False
+
+
