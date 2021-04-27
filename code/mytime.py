@@ -4,7 +4,7 @@ import datetime as datetime
 import time
 import pytz
 
-TZ_GERMANY = "Europe/Vienna"
+TZ_GERMANY = "Europe/Berlin"
 
 
 def current_time():
@@ -42,12 +42,15 @@ def seconds2delta_hr(seconds):
     return str(datetime.timedelta(seconds=seconds)).split(".")[0]
 
 
-def is_business_hours(given_timestamp=0):
+def is_business_hours(given_timestamp=0, timezone_name=TZ_GERMANY):
     if given_timestamp < 1:
         dt_object = dt.now()
     else:
         dt_object = dt.fromtimestamp(given_timestamp)
 
+    tz = pytz.timezone(timezone_name)
+    # Careful, this requires the raspi to be set to the German timezone
+    dt_object = tz.normalize(tz.localize(dt_object))
     if dt_object.hour == 18 and dt_object.minute == 00:
         return True
     return 7 < dt_object.hour < 18

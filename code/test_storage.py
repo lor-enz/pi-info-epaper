@@ -1,7 +1,7 @@
 import unittest
 
 
-class TestTimeTool(unittest.TestCase):
+class TestStorage(unittest.TestCase):
     filename = "pi-paper-test-storage.json"
 
     def test_store(self):

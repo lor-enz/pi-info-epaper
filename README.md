@@ -69,6 +69,7 @@ sudo raspi-config
 -> Ok	
 -> Finish
 
+Also set the **timezone** of the raspberry py to Germanys timezone. While in ```sudo raspi-config``` set it to Europe/Berlin
 
 ```sh
 wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.60.tar.gz
@@ -143,6 +144,27 @@ which runs the script every 10 minutes
 
 </p>
 </details>
+
+<details><summary>Running Tests</summary>
+<p>
+
+In repo folder run a all tests from a TestClass like this:
+
+```python3 code/test_storage.py TestStorage```
+
+In repo folder run a single specific test like this:
+
+```python3 code/test_paper.py TestPaper.test_paper_demo```
+
+</p>
+</details>
+
+
+## Common issues
+
+Any time/clock issues: counting starts too late, or ends too soon.
+
+-> The timezone of the raspberry pi is not set correctly. Run  ```sudo raspi-config``` and set it to Europe/Berlin
 
 ## Future uses
 
