@@ -35,13 +35,15 @@ layout = {
     'num_vac': (40, 35),
     'partial_rect': (13, 52, 423, 124),
 
-    'text_bav_inz': (25, 170-15),
-    'num_bav_inz': (10, 190-10),
+    'text_bav_inz': (25-18, 170-15),
+    'arrow_bav_inz': (3, 204),
+    'num_bav_inz': (51, 185),
 
-    'text_muc_inz': (278, 170-15),
-    'num_muc_inz': (263, 190-10),
+    'text_muc_inz': (278-18, 170-15),
+    'arrow_muc_inz': (247, 204),
+    'num_muc_inz': (295, 185),
 }
-
+# Arrow is 48 px. Add 3 px of margin to num
 
 class Paper:
 
@@ -58,7 +60,7 @@ class Paper:
             # Make sure to swap height and width! Default is portrait
             self.partial_rect = flip_partial(self.partial_rect, self.epd.height, self.epd.width)
         self.font_huge = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 90)
-        self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 85)
+        self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 70)
         self.font_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 45)
         self.font_medium = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 28)
         self.font_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
@@ -133,8 +135,10 @@ class Paper:
         string_2_line = f"{vaccinated_abs[0]}"
 
         string_bottom_left_1 = f"Bayern Inz:"
+        arrow_file_bav = 'UNKNOWN.bmp'
         string_bottom_left_2 = f"{bavaria_inz[0]}"
         string_bottom_right_1 = f"München Inz:"
+        arrow_file_muc = 'UNKNOWN.bmp'
         string_bottom_right_2 = f"{munich_inz[0]}"
 
         epd = self.epd
@@ -155,12 +159,22 @@ class Paper:
                       font=self.font_medium, fill=epd.GRAY4)
             draw.text(layout['num_bav_inz'], string_bottom_left_2,
                       font=self.font_very_big, fill=epd.GRAY4)
+            #arrow
+            bmp = Image.open(os.path.join(picdir, arrow_file_bav))
+            image.paste(bmp, layout['arrow_bav_inz'])
 
             # Inz MUC
             draw.text(layout['text_muc_inz'], string_bottom_right_1,
                       font=self.font_medium, fill=epd.GRAY4)
             draw.text(layout['num_muc_inz'], string_bottom_right_2,
                       font=self.font_very_big, fill=epd.GRAY4)
+            # arrow
+            bmp = Image.open(os.path.join(picdir, arrow_file_muc))
+            image.paste(bmp, layout['arrow_muc_inz'])
+
+            # LINES
+            draw.line((0, 150, 480, 150), fill=0)
+            draw.line((241, 150, 241, 280), fill=0)
 
             # push to display
             image.save(r'image.png')
