@@ -5,6 +5,7 @@ import math
 import numpy as np
 import pandas as pd
 
+import dataprep as dp
 import mytime as mytime
 import fetcher as fet
 
@@ -13,7 +14,8 @@ LOOK_BACK_FOR_MEAN = 3
 # it's 18:00 on the next day end of business hours. A good reason to download it anyway!
 OLDNESS_THRESHOLD_LARGE = 3600 * 34  # 3600 = 1 hour
 OLDNESS_THRESHOLD_SMALL = 3600 * 10  # 3600 = 1 hour
-DOWNLOAD_TIMEOUT = 60 * 11
+DOWNLOAD_TIMEOUT = 1
+#DOWNLOAD_TIMEOUT = 60 * 11
 
 STORAGE_FILE = 'databook-storage.json'
 
@@ -82,6 +84,8 @@ class Databook:
         self.bay_vac = -1
         self.muc_inz = -1
         self.bay_inz = -1
+        self.muc_inz_prev = -1
+        self.bay_inz_prev = -1
         self.load_storage()
         self.maybe_download_data()
         self.check_data_freshness()
@@ -114,6 +118,8 @@ class Databook:
         self.bay_vac = storage['bay_vac']
         self.bay_inz = storage['bay_inz']
         self.muc_inz = storage['muc_inz']
+        self.bay_inz_prev = storage['bay_inz_prev']
+        self.muc_inz_prev = storage['muc_inz_prev']
 
         logging.debug(f'Loaded {STORAGE_FILE}')
 
@@ -124,7 +130,9 @@ class Databook:
             'inf_dl_attempt_timestamp': int(self.inf_dl_attempt_timestamp),
             'vac_dl_attempt_timestamp': int(self.vac_dl_attempt_timestamp),
             'bay_vac': self.bay_vac,
+            'bay_inz_prev': self.bay_inz_prev,
             'bay_inz': self.bay_inz,
+            'muc_inz_prev': self.muc_inz_prev,
             'muc_inz': self.muc_inz
         }
         from storage import store
@@ -257,7 +265,7 @@ class Databook:
     def add_shots_sum(self, df):
         df['shots_sum'] = 0
         df['shots_sum'] = df['shots_today'].cumsum().round()
-        df['shots_sum'] = df.shots_sum.astype(int) # hmm
+        df['shots_sum'] = df.shots_sum.astype(int)  # hmm
         return df
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -268,24 +276,30 @@ class Databook:
 
     def get_inz_bavaria(self):
         the_one_row = self.inf_df[self.inf_df['county'] == 'SK München']
-        inz = the_one_row['cases7_bl_per_100k']
-        inz = "{:.1f}".format(inz.values[0])
+        new_inz = the_one_row['cases7_bl_per_100k']
+        new_inz = "{:.1f}".format(new_inz.values[0])
         # store it!
-        changed = not self.bay_inz == inz
-        self.bay_inz = inz
-        self.save_storage()
-        return inz, changed
+        changed = not self.bay_inz == new_inz
+        if changed:
+            self.bay_inz_prev = self.bay_inz
+            self.bay_inz = new_inz
+            self.save_storage()
+        trend = dp.trend(float(self.bay_inz_prev), float(self.bay_inz))
+        return new_inz, True, trend.value
 
     def get_inz_munich(self):
         the_one_row = self.inf_df[self.inf_df['county'] == 'SK München']
-        inz = the_one_row['cases7_per_100k']
-        inz = "{:.1f}".format(inz.values[0])
+        new_inz = the_one_row['cases7_per_100k']
+        new_inz = "{:.1f}".format(new_inz.values[0])
         # store it!
-        changed = not self.muc_inz == inz
-        # print(f'stored {self.storage["muc_inz"]}  ==  {inz} new_value -> {not changed}')
-        self.muc_inz = inz
-        self.save_storage()
-        return inz, changed
+        changed = not self.muc_inz == new_inz
+        if changed:
+            self.muc_inz_prev = self.muc_inz
+            self.muc_inz = new_inz
+            self.save_storage()
+
+        trend = dp.trend(float(self.muc_inz_prev), float(self.muc_inz))
+        return new_inz, changed, trend.value
 
     def get_official_abs_doses(self):
         new_value = self.vac_df.tail(1)['shots_sum'].values[0]
@@ -325,5 +339,3 @@ class Databook:
             return True
         else:
             return False
-
-

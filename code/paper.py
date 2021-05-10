@@ -135,10 +135,10 @@ class Paper:
         string_2_line = f"{vaccinated_abs[0]}"
 
         string_bottom_left_1 = f"Bayern Inz:"
-        arrow_file_bav = 'UNKNOWN.bmp'
+        arrow_file_bav = f'{bavaria_inz[2]}.bmp'
         string_bottom_left_2 = f"{bavaria_inz[0]}"
         string_bottom_right_1 = f"München Inz:"
-        arrow_file_muc = 'UNKNOWN.bmp'
+        arrow_file_muc = f'{munich_inz[2]}.bmp'
         string_bottom_right_2 = f"{munich_inz[0]}"
 
         epd = self.epd
@@ -173,8 +173,8 @@ class Paper:
             image.paste(bmp, layout['arrow_muc_inz'])
 
             # LINES
-            draw.line((0, 150, 480, 150), fill=0)
-            draw.line((241, 150, 241, 280), fill=0)
+            #draw.line((0, 150, 480, 150), fill=0)
+            #draw.line((241, 150, 241, 280), fill=0)
 
             # push to display
             image.save(r'image.png')
