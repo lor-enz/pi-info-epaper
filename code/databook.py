@@ -14,8 +14,7 @@ LOOK_BACK_FOR_MEAN = 3
 # it's 18:00 on the next day end of business hours. A good reason to download it anyway!
 OLDNESS_THRESHOLD_LARGE = 3600 * 34  # 3600 = 1 hour
 OLDNESS_THRESHOLD_SMALL = 3600 * 10  # 3600 = 1 hour
-DOWNLOAD_TIMEOUT = 1
-#DOWNLOAD_TIMEOUT = 60 * 11
+DOWNLOAD_TIMEOUT = 60 * 11
 
 STORAGE_FILE = 'databook-storage.json'
 
@@ -285,7 +284,7 @@ class Databook:
             self.bay_inz = new_inz
             self.save_storage()
         trend = dp.trend(float(self.bay_inz_prev), float(self.bay_inz))
-        return new_inz, True, trend.value
+        return new_inz, changed, trend.value
 
     def get_inz_munich(self):
         the_one_row = self.inf_df[self.inf_df['county'] == 'SK München']
