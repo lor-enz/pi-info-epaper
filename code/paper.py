@@ -39,9 +39,12 @@ layout = {
     'arrow_bav_inz': (3, 204),
     'num_bav_inz': (51, 185),
 
-    'text_muc_inz': (278-18, 170-15),
+    'text_muc_inz': (278, 170-15),
     'arrow_muc_inz': (247, 204),
     'num_muc_inz': (295, 185),
+
+    'line_hor': (0, 150, 480, 150),
+    'line_ver': (241, 150, 241, 280),
 }
 # Arrow is 48 px. Add 3 px of margin to num
 
@@ -173,8 +176,8 @@ class Paper:
             image.paste(bmp, layout['arrow_muc_inz'])
 
             # LINES
-            #draw.line((0, 150, 480, 150), fill=0)
-            #draw.line((241, 150, 241, 280), fill=0)
+            #draw.line(layout['line_hor'], fill=0)
+            #draw.line(layout['line_ver'], fill=0)
 
             # push to display
             image.save(r'image.png')

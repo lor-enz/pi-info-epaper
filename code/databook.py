@@ -151,7 +151,7 @@ class Databook:
 
         fetcher = fet.Fetcher()
 
-        if is_fresh_inf_data_needed[0] and seconds_since_last_attempt_inc >= DOWNLOAD_TIMEOUT:
+        if (is_fresh_inf_data_needed[0] and seconds_since_last_attempt_inc >= DOWNLOAD_TIMEOUT) or os.path.isfile(fet.CSV_INF['file']):
             fetcher.download_data(fet.CSV_INF)
             logging.info(f"Downloaded {fet.CSV_INF['file']}")
             self.inf_dl_attempt_timestamp = mytime.current_time()
@@ -159,7 +159,7 @@ class Databook:
             delta = mytime.seconds2delta_hr(seconds_since_last_attempt_inc)
             logging.info(
                 f'Skipping inf download. Last attempt {delta} ago. isNeeded: {is_fresh_inf_data_needed}')
-        if is_fresh_vac_data_needed[0] and seconds_since_last_attempt_vac >= DOWNLOAD_TIMEOUT:
+        if (is_fresh_vac_data_needed[0] and seconds_since_last_attempt_vac >= DOWNLOAD_TIMEOUT) or os.path.isfile(fet.CSV_VAC['file']):
             fetcher.download_data(fet.CSV_VAC)
             logging.info(f"Downloaded {fet.CSV_VAC['file']}")
             self.vac_dl_attempt_timestamp = mytime.current_time()
