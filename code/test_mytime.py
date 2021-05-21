@@ -33,6 +33,18 @@ class TestTimeTool(unittest.TestCase):
         self.assertEqual("0:01:00", str(tt.seconds2delta(60)))
         self.assertEqual("1:01:00", str(tt.seconds2delta(60*60 + 60)))
 
+    def test_is_business_time(self):
+        from mytime import is_business_hours
+        import mytime as tt
+        result = is_business_hours(1621233000)  # 8:30
+        self.assertEqual(True, result)
+
+        result = is_business_hours(1621229400)  # 7:30
+        self.assertEqual(False, result)
+
+        result = is_business_hours()
+        print(result)
+
     def test_business_time_since(self):
         from mytime import business_time_since
         import mytime as tt

@@ -45,13 +45,18 @@ def seconds2delta_hr(seconds):
 def is_business_hours(given_timestamp=0, timezone_name=TZ_GERMANY):
     if given_timestamp < 1:
         dt_object = dt.now()
+        logging.debug(f'is_business_hours() created dt_object: {dt_object}')
     else:
         dt_object = dt.fromtimestamp(given_timestamp)
 
     tz = pytz.timezone(timezone_name)
     # Careful, this requires the raspi to be set to the German timezone
     dt_object = tz.normalize(tz.localize(dt_object))
-    if dt_object.hour == 18 and dt_object.minute == 00:
+    if dt_object.hour == 18 and dt_object.minute < 9:
+        return True
+    if dt_object.hour == 7 and dt_object.minute > 30:
+        return True
+    if dt_object.hour == 6 and dt_object.minute > 30:
         return True
     return 7 < dt_object.hour < 18
 
