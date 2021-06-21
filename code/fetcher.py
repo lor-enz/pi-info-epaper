@@ -6,7 +6,7 @@ import requests
 import mytime as mytime
 
 CSV_VAC = {
-    'url': 'https://raw.githubusercontent.com/ard-data/2020-rki-impf-archive/master/data/9_csv_v2/region_BY.csv',
+    'url': 'https://raw.githubusercontent.com/ard-data/2020-rki-impf-archive/master/data/9_csv_v3/region_BY.csv',
     'file': 'vac.csv',
     'key': 'vac_download_timestamp'
 }

@@ -187,7 +187,7 @@ class Databook:
         df = pd.read_csv(fet.CSV_VAC['file'], sep=',',
                          index_col=0, parse_dates=True)
         last_update = ((df.tail(1).index.astype(
-            np.int64) // 10 ** 9)).tolist()[0] + 60 * 60 * (24 + 7)
+            np.int64) // 10 ** 9)).tolist()[0] + 60 * 60 * (24 + 6)
         return last_update
 
     def load_inf_dataframe(self):

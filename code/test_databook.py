@@ -42,6 +42,7 @@ class TestDatabook(unittest.TestCase):
         print(f'inf timestamp {inf_ts} -> {mytime.ts2dt(inf_ts)}')
         print(f'vac timestamp {vac_ts} -> {mytime.ts2dt(vac_ts)}')
 
+        # I am really not sure what this is testing.
         self.assertEqual(8, mytime.ts2dt(vac_ts).hour)
         self.assertEqual(8, mytime.ts2dt(inf_ts).hour)
 
