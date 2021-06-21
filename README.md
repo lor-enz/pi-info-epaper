@@ -23,7 +23,7 @@ Inzidenzwert = (New infections per 100k from the last 7 days)
 
 The hardware probably costs less than 50€ 
 
-- **[Raspberry Pi zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/)** with pins (wifi is A LOT simpler)
+- **[Raspberry Pi zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/)** with pins (wifi recommended)
 
 - **[Waveshare 3.7inch e-Paper e-Ink Display HAT For Raspberry Pi, 480*280, Black / White, 4 Grey Scales](https://www.aliexpress.com/item/1005001408167714.html?spm=a2g0s.9042311.0.0.1e2b4c4dAKdgvw)** The HAT is the easy solution with the e-paper and controller combined into one element.
 *Alternatively* get the e-paper and the controller separately. This allows the e-paper being flat against a surface. The combined element with the Raspi is 2cm thick. The combined element is easier to set up since it fits together sluggly :)
