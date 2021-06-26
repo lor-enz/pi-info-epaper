@@ -32,7 +32,7 @@ layout = {
     'time': (430, 0),
 
     'text_vac': (45, 15),
-    'num_vac': (40, 35),
+    'num_vac': (20, 35),
     'partial_rect': (13, 52, 423, 124),
 
     'text_bav_inz': (25-18, 170-15),
