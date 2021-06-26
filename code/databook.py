@@ -109,7 +109,11 @@ class Databook:
             logging.info(f'{STORAGE_FILE} does not exist (yet)')
             return  # no file?
         from storage import retrieve
-        storage = retrieve(STORAGE_FILE)
+        try:
+            storage = retrieve(STORAGE_FILE)
+        except:
+            logging.info(f'{STORAGE_FILE} is broken. Pretending it does not exist.')
+            return
         self.inf_freshness_timestamp = storage['inf_freshness_timestamp']
         self.vac_freshness_timestamp = storage['vac_freshness_timestamp']
         self.inf_dl_attempt_timestamp = storage['inf_dl_attempt_timestamp']
