@@ -1,9 +1,9 @@
 # pi-info-paper
 
-This is a python project running on raspberry pi zero w of mine. The pi has a 3.7 Inch Waveshare e paper (and display controller) attached to it.
+This is a python project running on a raspberry pi zero w of mine. The pi has a 3.7 Inch Waveshare e paper (and display controller) attached to it.
 
 The code is intended to run as a cronjob every 10 minutes.
-It will download Germanys current information regarding covid-19 infections and vaccinations and display them on the screen. Updating some of it continuously.
+It will download Germanys current information regarding covid-19 infections and vaccinations and display them on the screen. 
 I put it up on the fridge in my kitchen which makes for a convenient way to get a sense for the numbers.
 
 ## What is does
@@ -11,9 +11,9 @@ It displays information on the current covid-19 situation in Bavaria and Munich.
 
 ![pi-info-epaper](https://user-images.githubusercontent.com/33176142/111890186-6d5a0980-89e7-11eb-8aa8-7fe316021a20.jpg)
 
-- Large number in the middle: Vaccination doses given out in Bavaria in real time (changes as fast as the e-paper allows, so about every 5 seconds) Real time means it's extrapolated to the current moment according to some assumptions. The official number only specify vaccinations from the end of the previous day.
-- The Inzidenzwert of Bavaria 
-- The Inzidenzwert of Munich, Bavaria
+- Large number in the middle: Vaccination doses given out in Bavaria in real time (changes as fast as the e-paper allows, so about every 5 seconds). Real time means it's extrapolated to the current moment according to some assumptions. The official numbers only show vaccinations up to the end of the previous day.
+- Bottom left: The Inzidenzwert of Bavaria 
+- Bottom right: The Inzidenzwert of Munich, Bavaria
 
 Inzidenzwert = (New infections per 100k from the last 7 days)
 ## Technologies and setup
@@ -23,10 +23,10 @@ Inzidenzwert = (New infections per 100k from the last 7 days)
 
 The hardware probably costs less than 50€ 
 
-- **[Raspberry Pi zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/)** with pins (wifi is A LOT simpler)
+- **[Raspberry Pi zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/)** with pins
 
 - **[Waveshare 3.7inch e-Paper e-Ink Display HAT For Raspberry Pi, 480*280, Black / White, 4 Grey Scales](https://www.aliexpress.com/item/1005001408167714.html?spm=a2g0s.9042311.0.0.1e2b4c4dAKdgvw)** The HAT is the easy solution with the e-paper and controller combined into one element.
-*Alternatively* get the e-paper and the controller separately. This allows the e-paper being flat against a surface. The combined element with the Raspi is 2cm thick. The combined element is easier to set up since it fits together sluggly :)
+*Alternatively* get the e-paper and the controller separately. This allows the e-paper being flat against a surface. The combined element with the Raspi is 2cm thick. The combined element is easier to set up since it fits together snuggly :)
 
 - *Alternative:* **[Waveshare 3.7inch e-Paper e-Ink Raw Display with 480×280 Resolution Black/White 4 Grey Scales ](https://www.aliexpress.com/item/1005001587973205.html?spm=a2g0s.9042311.0.0.1e2b4c4dAKdgvw)**
  and separate **[Universal e-Paper Raw Panel Driver HAT SPI for Waveshare Various E-ink Module](https://www.aliexpress.com/item/32834283583.html?spm=a2g0s.9042311.0.0.1e2b4c4dAKdgvw)**
@@ -42,7 +42,7 @@ The code for driving the e-paper is oriented around the official documentation f
 
 
 
-My code may be a bit messy, since I haven't written lots of written python code in a while. But I'm doing my best to improve it!
+My code may be a bit messy in some parts, since I wrote this after a long break of coding with python. But it's good enough for a hobby project I guess?
 
 
 ### Setup
