@@ -15,6 +15,13 @@ CSV_INF = {
     'file': 'inf.csv',
     'key': 'inf_download_timestamp'
 }
+
+AMPEL_SCRAPE = {
+    'url': 'https://datawrapper.dwcdn.net/2L501/13/',
+    'file': 'ampel.html',
+    'key': 'ampel_download_timestamp'
+}
+
 STORAGE_FILE = 'fetcher-storage.json'
 
 
@@ -44,6 +51,7 @@ class Fetcher:
     def __init__(self):
         self.inf_download_timestamp = 0
         self.vac_download_timestamp = 0
+        self.ampel_download_timestamp = 0
         self.load_storage()
 
     def __str__(self):
@@ -74,19 +82,24 @@ class Fetcher:
         self.download_data(CSV_VAC)
         fix_comma_in_csv(CSV_INF['file'])
 
-    def download_data(self, csv_data):
-        response = requests.get(csv_data['url'])
 
-        with open(csv_data['file'], 'w') as f:
+    # csv_data_object holds url, file and key
+    def download_data(self, csv_data_object):
+        response = requests.get(csv_data_object['url'])
+
+        with open(csv_data_object['file'], 'w') as f:
             writer = csv.writer(f)
             for line in response.iter_lines():
                 writer.writerow(line.decode('utf-8').split(','))
-        if csv_data['file'] == 'vac.csv':
+        if csv_data_object['file'] == 'vac.csv':
             self.vac_download_timestamp = mytime.current_time()
-        elif csv_data['file'] == 'inf.csv':
+        elif csv_data_object['file'] == 'inf.csv':
             self.inf_download_timestamp = mytime.current_time()
             fix_comma_in_csv(CSV_INF['file'])
         else:
             logging.error(
-                f"Unknown filename! Expected vac.csv or inf.csv. Got {csv_data['file']}")
+                f"Unknown filename! Expected vac.csv or inf.csv. Got {csv_data_object['file']}")
         self.save_storage()
+
+    def download_ampel(self):
+        self.ampel_download_timestamp = mytime.current_time()
