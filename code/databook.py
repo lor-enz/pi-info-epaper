@@ -5,9 +5,12 @@ import math
 import numpy as np
 import pandas as pd
 
+import urllib.request, json
+
 import dataprep as dp
 import mytime as mytime
 import fetcher as fet
+
 
 LOOK_BACK_FOR_MEAN = 3
 # 34 because: imagine it's a day old, during business hours it would just download new data. But at 34 hrs old,
@@ -76,33 +79,36 @@ class Databook:
     def __init__(self):
         logging.basicConfig(level=logging.INFO)
 
-        self.inf_freshness_timestamp = 0
-        self.vac_freshness_timestamp = 0
-        self.inf_dl_attempt_timestamp = 0
+        # TIMESTAMPS
+        self.timestamp_vac = 0
+        self.timestamp_inf = 0
+        self.timestamp_hos = 0
+
         self.vac_dl_attempt_timestamp = 0
+        self.inf_dl_attempt_timestamp = 0
+        self.hos_dl_attempt_timestamp = 0
+
+        # VACCINE DOSES
         self.bay_vac = -1
+
+        # INZIDENZ
         self.muc_inz = -1
         self.bay_inz = -1
         self.muc_inz_prev = -1
         self.bay_inz_prev = -1
+
+        # HOSPITAL
+        self.hospital_cases7 = -1
+        self.hospital_icu_cases = -1
+
         self.load_storage()
         self.maybe_download_data()
         self.check_data_freshness()
         self.save_storage()
-        self.inf_df = self.load_inf_dataframe()
+
+        self.inf_js = self.load_infect_json()
+        self.hos_js = self.load_hospital_json()
         self.vac_df = self.load_vac_dataframe()
-
-    def check_data_freshness(self):
-        new_inf_ts = self.get_inf_last_update_timestamp()
-        new_vac_ts = self.get_vac_last_update_timestamp()
-
-        if new_inf_ts > self.inf_freshness_timestamp:
-            logging.info(f'NEW INF DATA. Freshness: {mytime.ts2dt(new_inf_ts)}')
-            self.inf_freshness_timestamp = new_inf_ts
-
-        if new_vac_ts > self.vac_freshness_timestamp:
-            logging.info(f'NEW VAC DATA. Freshness: {mytime.ts2dt(new_vac_ts)}')
-            self.vac_freshness_timestamp = new_vac_ts
 
     def load_storage(self):
         if not os.path.isfile(STORAGE_FILE):
@@ -114,57 +120,95 @@ class Databook:
         except:
             logging.info(f'{STORAGE_FILE} is broken. Pretending it does not exist.')
             return
-        self.inf_freshness_timestamp = storage['inf_freshness_timestamp']
-        self.vac_freshness_timestamp = storage['vac_freshness_timestamp']
-        self.inf_dl_attempt_timestamp = storage['inf_dl_attempt_timestamp']
-        self.vac_dl_attempt_timestamp = storage['vac_dl_attempt_timestamp']
-        self.bay_vac = storage['bay_vac']
-        self.bay_inz = storage['bay_inz']
-        self.muc_inz = storage['muc_inz']
-        self.bay_inz_prev = storage['bay_inz_prev']
-        self.muc_inz_prev = storage['muc_inz_prev']
+        self.timestamp_vac = storage['timestamp_vac']
+        self.timestamp_inf = storage['timestamp_inf']
+        self.timestamp_hos = storage['timestamp_hos']
 
+        self.vac_dl_attempt_timestamp = storage['vac_dl_attempt_timestamp']
+        self.inf_dl_attempt_timestamp = storage['inf_dl_attempt_timestamp']
+        self.hos_dl_attempt_timestamp = storage['hos_dl_attempt_timestamp']
+
+        # VACCINE DOSES
+        self.bay_vac = storage['bay_vac']
+
+        # INZIDENZ
+        self.muc_inz = storage['muc_inz']
+        self.bay_inz = storage['bay_inz']
+        self.muc_inz_prev = storage['muc_inz_prev']
+        self.bay_inz_prev = storage['bay_inz_prev']
+
+        # HOSPITAL
+        self.hospital_cases7 = storage['hospital_cases7']
+        self.hospital_icu_cases = storage['hospital_icu_cases']
         logging.debug(f'Loaded {STORAGE_FILE}')
 
     def save_storage(self):
         storage = {
-            'inf_freshness_timestamp': int(self.inf_freshness_timestamp),
-            'vac_freshness_timestamp': int(self.vac_freshness_timestamp),
-            'inf_dl_attempt_timestamp': int(self.inf_dl_attempt_timestamp),
+            'timestamp_vac': int(self.timestamp_vac),
+            'timestamp_inf': int(self.timestamp_inf),
+            'timestamp_hos': int(self.timestamp_hos),
+
             'vac_dl_attempt_timestamp': int(self.vac_dl_attempt_timestamp),
+            'inf_dl_attempt_timestamp': int(self.inf_dl_attempt_timestamp),
+            'hos_dl_attempt_timestamp': int(self.hos_dl_attempt_timestamp),
+            # VAC
             'bay_vac': self.bay_vac,
+            # INF
             'bay_inz_prev': self.bay_inz_prev,
             'bay_inz': self.bay_inz,
             'muc_inz_prev': self.muc_inz_prev,
-            'muc_inz': self.muc_inz
+            'muc_inz': self.muc_inz,
+            # HOS
+            'hospital_cases7': self.hospital_cases7,
+            'hospital_icu_cases': self.hospital_icu_cases,
         }
         from storage import store
         store(STORAGE_FILE, storage)
 
-    def is_fresh_inf_data_needed(self):
-        return is_fresh_data_needed(self.inf_freshness_timestamp, fet.CSV_INF['file'])
+    def check_data_freshness(self):
+        new_vac_ts = self.get_vac_file_timestamp()
+        new_inf_ts = self.get_inf_file_timestamp()
+        new_hos_ts = self.get_hos_file_timestamp()
+
+        if new_vac_ts > self.timestamp_vac:
+            logging.info(f'NEW VAC DATA. Freshness: {mytime.ts2dt(new_vac_ts)}')
+            self.vac_freshness_timestamp = new_vac_ts
+
+        if new_inf_ts > self.timestamp_inf:
+            logging.info(f'NEW INF DATA. Freshness: {mytime.ts2dt(new_inf_ts)}')
+            self.inf_freshness_timestamp = new_inf_ts
+
+        if new_hos_ts > self.timestamp_hos:
+            logging.info(f'NEW HOS DATA. Freshness: {mytime.ts2dt(new_hos_ts)}')
+            self.hos_freshness_timestamp = new_hos_ts
 
     def is_fresh_vac_data_needed(self):
-        return is_fresh_data_needed(self.vac_freshness_timestamp, fet.CSV_VAC['file'])
+        # TODO undo hardcoded filename
+        return is_fresh_data_needed(self.timestamp_vac, "vac.csv")
 
+    def is_fresh_inf_data_needed(self):
+        # TODO undo hardcoded filename
+        return is_fresh_data_needed(self.timestamp_inf, "inf.json")
+
+    def is_fresh_hos_data_needed(self):
+        # TODO undo hardcoded filename
+        return is_fresh_data_needed(self.timestamp_hos, "hos.json")
+
+    # Only downloads data if it is not existent or old
     def maybe_download_data(self):
-        seconds_since_last_attempt_inc = mytime.current_time() - self.inf_dl_attempt_timestamp
         seconds_since_last_attempt_vac = mytime.current_time() - self.vac_dl_attempt_timestamp
-        is_fresh_inf_data_needed = self.is_fresh_inf_data_needed()
+        seconds_since_last_attempt_inf = mytime.current_time() - self.inf_dl_attempt_timestamp
+        seconds_since_last_attempt_hos = mytime.current_time() - self.hos_dl_attempt_timestamp
+
         is_fresh_vac_data_needed = self.is_fresh_vac_data_needed()
+        is_fresh_inf_data_needed = self.is_fresh_inf_data_needed()
+        is_fresh_hos_data_needed = self.is_fresh_hos_data_needed()
 
         fetcher = fet.Fetcher()
 
-        if (is_fresh_inf_data_needed[0] and seconds_since_last_attempt_inc >= DOWNLOAD_TIMEOUT) or os.path.isfile(fet.CSV_INF['file']):
-            fetcher.download_data(fet.CSV_INF)
-            logging.info(f"Downloaded {fet.CSV_INF['file']}")
-            self.inf_dl_attempt_timestamp = mytime.current_time()
-        else:
-            delta = mytime.seconds2delta_hr(seconds_since_last_attempt_inc)
-            logging.info(
-                f'Skipping inf download. Last attempt {delta} ago. isNeeded: {is_fresh_inf_data_needed}')
+
         if (is_fresh_vac_data_needed[0] and seconds_since_last_attempt_vac >= DOWNLOAD_TIMEOUT) or os.path.isfile(fet.CSV_VAC['file']):
-            fetcher.download_data(fet.CSV_VAC)
+            fetcher.download_csv_vac_data()
             logging.info(f"Downloaded {fet.CSV_VAC['file']}")
             self.vac_dl_attempt_timestamp = mytime.current_time()
         else:
@@ -172,33 +216,67 @@ class Databook:
             logging.info(
                 f"Skipping vac download. Last attempt {delta} ago. isNeeded: {is_fresh_vac_data_needed}")
 
+        if (is_fresh_inf_data_needed[0] and seconds_since_last_attempt_inf >= DOWNLOAD_TIMEOUT) or os.path.isfile(fet.CASES['file']):
+            fetcher.download_infect_json()
+            logging.info(f"Downloaded infect.json")
+            self.inf_dl_attempt_timestamp = mytime.current_time()
+        else:
+            delta = mytime.seconds2delta_hr(seconds_since_last_attempt_inf)
+            logging.info(
+                f'Skipping inf download. Last attempt {delta} ago. isNeeded: {is_fresh_inf_data_needed}')
+
+        if (is_fresh_hos_data_needed[0] and seconds_since_last_attempt_hos >= DOWNLOAD_TIMEOUT) or os.path.isfile(fet.HOSPIT['file']):
+            fetcher.download_hospit_json()
+            logging.info(f"Downloaded {fet.HOSPIT['file']}")
+            self.hos_dl_attempt_timestamp = mytime.current_time()
+        else:
+            delta = mytime.seconds2delta_hr(seconds_since_last_attempt_hos)
+            logging.info(
+                f"Skipping hos download. Last attempt {delta} ago. isNeeded: {is_fresh_hos_data_needed}")
+
+
         fetcher.save_storage()  # TODO can we remove this because it's already saved in fetcher.download_data()... ?
 
-    def get_inf_last_update_timestamp(self):
-        # TODO this should be done better, and with pandas not with csv, but pandas was being difficult...
-        rows = []
-        with open(fet.CSV_INF['file'], newline='') as csvfile:
-            reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-            for row in reader:
-                rows.append(row)
-        date_string = rows[-1][34]
+    def get_inf_file_timestamp(self):
+        with open('infect.json') as json_file:
+            data = json.load(json_file)
+            time_string = data['features'][0]['attributes']['last_update']
+            print(f"time_string: {time_string}")
+            time_string = time_string.replace(" Uhr", "")
+            print(f"time_string after replace: {time_string}")
+            self.timestamp_hospital = mytime.string2timestamp(time_string, time_format="%d.%m.%Y, %H:%M")
+            print(f"self.timestamp_hospital: {self.timestamp_hospital}")
 
-        freshness_dt = mytime.string2datetime(time_string=date_string, time_format="%d.%m.%Y_%H:%M Uhr")
-        freshness_dt = freshness_dt.replace(hour=8)
-        return int(freshness_dt.timestamp())
+    def get_hos_file_timestamp(self):
+        with open('hospital.json') as json_file:
+            data = json.load(json_file)
+            time_string = data["datenstand_lgl"]
+            print(f"time_string: {time_string}")
+            time_string = time_string.replace("00:00 Uhr", "08:00 Uhr")
+            time_string = time_string.replace(" Uhr", "")
+            print(f"time_string after replace: {time_string}")
+            self.timestamp_hospital = mytime.string2timestamp(time_string, time_format="%d.%m.%Y, %H:%M")
+            print(f"self.timestamp_hospital: {self.timestamp_hospital}")
 
-    def get_vac_last_update_timestamp(self):
+    def get_vac_file_timestamp(self):
         df = pd.read_csv(fet.CSV_VAC['file'], sep=',',
                          index_col=0, parse_dates=True)
         last_update = ((df.tail(1).index.astype(
             np.int64) // 10 ** 9)).tolist()[0] + 60 * 60 * (24 + 6)
         return last_update
 
-    def load_inf_dataframe(self):
-        # INFE
-        csv_path = fet.CSV_INF['file']
-        df = pd.read_csv(csv_path, sep=',', index_col=0)
-        return df
+    def load_hospital_json(self):
+        with open('hospital.json') as json_file:
+            data = json.load(json_file)
+            # self.hospitalisierung = data["hospitalisierung"]
+            # self.intensiv = data["intensiv"]
+            return data
+
+    def load_infect_json(self):
+        with open('infect.json') as json_file:
+            data = json.load(json_file)
+            return data
+
 
     def load_vac_dataframe(self):
         # VACC
@@ -278,10 +356,8 @@ class Databook:
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def get_inz_bavaria(self):
-        the_one_row = self.inf_df[self.inf_df['county'] == 'SK München']
-        new_inz = the_one_row['cases7_bl_per_100k']
-        new_inz = "{:.1f}".format(new_inz.values[0])
-        # store it!
+        data = self.load_infect_json()
+        new_inz = round(data['features'][0]['attributes']['cases7_bl_per_100k'],1)
         changed = not self.bay_inz == new_inz
         if changed:
             self.bay_inz_prev = self.bay_inz
@@ -291,10 +367,8 @@ class Databook:
         return new_inz, changed, trend.value
 
     def get_inz_munich(self):
-        the_one_row = self.inf_df[self.inf_df['county'] == 'SK München']
-        new_inz = the_one_row['cases7_per_100k']
-        new_inz = "{:.1f}".format(new_inz.values[0])
-        # store it!
+        data = self.load_infect_json()
+        new_inz = round(data['features'][0]['attributes']['cases7_per_100k'], 1)
         changed = not self.muc_inz == new_inz
         if changed:
             self.muc_inz_prev = self.muc_inz

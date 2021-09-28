@@ -1,3 +1,3 @@
 #!/bin/sh
 
-/usr/bin/python3 /home/pi/projects/pi-info-epaper/code/main.py False
+/usr/bin/python3 /home/pi/projects/pi-info-epaper/code/main.py True
