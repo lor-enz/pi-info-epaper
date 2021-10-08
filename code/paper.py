@@ -92,7 +92,7 @@ class Paper:
                 epd.display_1Gray(epd.getbuffer(image))
                 draw.rectangle(self.partial_rect, fill=255)
                 epd.display_1Gray(epd.getbuffer(image))
-
+            logging.info(f"Doing partial refresh from now on...")
             while (int((mytime.current_time() - start_time)) < duration_secs) and not self.cancel_file_exists():
                 image = Image.new('1', (epd.height, epd.width), 255)
                 draw = ImageDraw.Draw(image)
@@ -104,7 +104,8 @@ class Paper:
                 if self.flip:
                     image = image.rotate(180, expand=1)
                 epd.display_1Gray(epd.getbuffer(image))
-                logging.info(f"PARTIAL {vaccinated_abs[2]}")
+                logging.debug(f"PARTIAL {vaccinated_abs[2]}")
+            logging.info(f"Stopping partial refresh.")
             epd.sleep()
         except IOError as e:
             logging.info(e)

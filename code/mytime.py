@@ -23,10 +23,17 @@ def ts2dt(timestamp):
 
 def string2timestamp(time_string, time_format="%Y-%m-%d_%H:%M", timezone_name=TZ_GERMANY):
     logging.debug(f'time_string {time_string} time_format {time_format} timezone_name {timezone_name}')
-    dt_obj = datetime.datetime.strptime(time_string, time_format)
-    timezone_obj = pytz.timezone(timezone_name)
-    dt_obj = timezone_obj.localize(dt_obj)
-    return dt.timestamp(dt_obj)
+    try:
+
+        dt_obj = datetime.datetime.strptime(time_string, time_format)
+        timezone_obj = pytz.timezone(timezone_name)
+        dt_obj = timezone_obj.localize(dt_obj)
+        return dt.timestamp(dt_obj)
+    except Exception as e:
+        logging.error(f'Error in mytime. time_string is {time_string} time_format is {time_format} error message is {e} ')
+
+
+
 
 
 def string2datetime(time_string, time_format="%Y-%m-%d_%H:%M", timezone_name=TZ_GERMANY):

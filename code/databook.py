@@ -154,8 +154,7 @@ class Databook:
         is_fresh_vac_data_needed = self.is_fresh_vac_data_needed()
 
         fetcher = fet.Fetcher()
-
-        if (is_fresh_inf_data_needed[0] and seconds_since_last_attempt_inc >= DOWNLOAD_TIMEOUT) or os.path.isfile(fet.CSV_INF['file']):
+        if (is_fresh_inf_data_needed[0] and seconds_since_last_attempt_inc >= DOWNLOAD_TIMEOUT):
             fetcher.download_data(fet.CSV_INF)
             logging.info(f"Downloaded {fet.CSV_INF['file']}")
             self.inf_dl_attempt_timestamp = mytime.current_time()
@@ -163,7 +162,7 @@ class Databook:
             delta = mytime.seconds2delta_hr(seconds_since_last_attempt_inc)
             logging.info(
                 f'Skipping inf download. Last attempt {delta} ago. isNeeded: {is_fresh_inf_data_needed}')
-        if (is_fresh_vac_data_needed[0] and seconds_since_last_attempt_vac >= DOWNLOAD_TIMEOUT) or os.path.isfile(fet.CSV_VAC['file']):
+        if (is_fresh_vac_data_needed[0] and seconds_since_last_attempt_vac >= DOWNLOAD_TIMEOUT):
             fetcher.download_data(fet.CSV_VAC)
             logging.info(f"Downloaded {fet.CSV_VAC['file']}")
             self.vac_dl_attempt_timestamp = mytime.current_time()
@@ -175,7 +174,8 @@ class Databook:
         fetcher.save_storage()  # TODO can we remove this because it's already saved in fetcher.download_data()... ?
 
     def get_inf_last_update_timestamp(self):
-        # TODO this should be done better, and with pandas not with csv, but pandas was being difficult...
+        # Broken! Dirty fix, that results in inf.csv being downloaded only when vac.csv also needs a new version.
+        return self.get_vac_last_update_timestamp()
         rows = []
         with open(fet.CSV_INF['file'], newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='|')
