@@ -6,7 +6,7 @@ import pytz
 
 TZ_GERMANY = "Europe/Berlin"
 
-
+# timestamp in seconds
 def current_time():
     return time.time()
 
