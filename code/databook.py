@@ -48,12 +48,17 @@ class Databook:
         self.bavaria_vax = storage['bavaria_vax']
         logging.debug(f'Loaded {STORAGE_FILE}')
 
+    def get_munich_inc(self):
+        inz = round(self.districts['munich']['week_incidence'])
+        trend = self.districts['munich']['incidence_trend']
+        return inz, trend
+
     def get_miesbach_inc(self):
         inz = round(self.districts['miesbach']['week_incidence'])
         trend = self.districts['miesbach']['incidence_trend']
         return inz, trend
 
-    def get_munnich_lk_inc(self):
+    def get_munich_lk_inc(self):
         inz = round(self.districts['munich_lk']['week_incidence'])
         trend = self.districts['munich_lk']['incidence_trend']
         return inz, trend
