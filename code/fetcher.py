@@ -1,54 +1,31 @@
 import os
 import logging
-import csv
+import urllib.request, json
+
 import requests
+
+import trend as mytrend
 
 import mytime as mytime
 
-CSV_VAC = {
-    'url': 'https://raw.githubusercontent.com/ard-data/2020-rki-impf-archive/master/data/9_csv_v3/region_BY.csv',
-    'file': 'vac.csv',
-    'key': 'vac_download_timestamp'
+API_URL_BASE = 'https://api.corona-zahlen.org/'
+
+AGS = {
+    'muenchen': '09162',
+    'muenchen_lk': '09184',
+    'miesbach': '09182'
 }
-CSV_INF = {
-    'url': 'https://opendata.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0.csv',
-    'file': 'inf.csv',
-    'key': 'inf_download_timestamp'
-}
-STORAGE_FILE = 'fetcher-storage.json'
 
-
-def fix_comma_in_csv(filename):
-    fin = open(filename, "rt")
-    data = fin.read()
-
-    data = data.replace('"," ', '_')
-    data = data.replace('","', '.')
-    data = data.replace('\"', '')
-    fin.close()
-    fin = open(filename, "wt")
-    fin.write(data)
-    fin.close()
-
-
-def vac_file_path():
-    return CSV_VAC['file']
-
-
-def inf_file_path():
-    return CSV_INF['file']
+STORAGE_FILE = 'storage.json'
 
 
 class Fetcher:
+    last_check_timestamp = 0
+
+    bavaria_population = 13_140_183
 
     def __init__(self):
-        self.inf_download_timestamp = 0
-        self.vac_download_timestamp = 0
         self.load_storage()
-
-    def __str__(self):
-        return f'vac.csv downloaded at: {self.inf_download_timestamp}  ' \
-               f'inf.csv downloaded at: {self.vac_download_timestamp}'
 
     def load_storage(self):
         if not os.path.isfile(STORAGE_FILE):
@@ -56,37 +33,119 @@ class Fetcher:
             return  # no file?
         from storage import retrieve
         storage = retrieve(STORAGE_FILE)
-        self.inf_download_timestamp = storage[CSV_INF['key']]
-        self.vac_download_timestamp = storage[CSV_VAC['key']]
 
+        self.last_check_timestamp = storage['last_check_timestamp']
+        self.districts = storage['districts']
+        self.bavaria_dict = storage['bavaria']
+        self.bavaria_vax = storage['bavaria_vax']
         logging.debug(f'Loaded {STORAGE_FILE}')
 
     def save_storage(self):
         storage = {
-            CSV_INF['key']: int(self.inf_download_timestamp),
-            CSV_VAC['key']: int(self.vac_download_timestamp)
+            'last_check_timestamp': int(self.last_check_timestamp),
+            'districts': self.districts,
+            'bavaria': self.bavaria_dict,
+            'bavaria_vax': self.bavaria_vax,
         }
         from storage import store
         store(STORAGE_FILE, storage)
 
-    def download_all_data(self):
-        self.download_data(CSV_INF)
-        self.download_data(CSV_VAC)
-        fix_comma_in_csv(CSV_INF['file'])
+    def get_relevant_data_if_needed(self):
+        delta = mytime.current_time() - self.last_check_timestamp
+        if delta < 3500:
+            print(f'Skipping Data Download. Last Update was {round(delta/1)} seconds ago.')
+            return False
+        self.get_relevant_data()
+        return True
 
-    def download_data(self, csv_data):
-        response = requests.get(csv_data['url'])
+    def get_relevant_data(self):
+        self.districts = self.get_district_incidence()
+        self.bavaria_dict = self.get_bavaria_incidence_and_hospital_cases()
+        self.bavaria_vax = self.get_bavaria_vaccination()
 
-        with open(csv_data['file'], 'w') as f:
-            writer = csv.writer(f)
-            for line in response.iter_lines():
-                writer.writerow(line.decode('utf-8').split(','))
-        if csv_data['file'] == 'vac.csv':
-            self.vac_download_timestamp = mytime.current_time()
-        elif csv_data['file'] == 'inf.csv':
-            self.inf_download_timestamp = mytime.current_time()
-            fix_comma_in_csv(CSV_INF['file'])
-        else:
-            logging.error(
-                f"Unknown filename! Expected vac.csv or inf.csv. Got {csv_data['file']}")
-        self.save_storage()
+        self.last_check_timestamp = mytime.current_time()
+        self.save_storage() # TODO move this?
+
+    def get_district_incidence(self):
+        response = requests.get(f'{API_URL_BASE}districts/history/frozen-incidence/3')
+        if (response.status_code != 200):
+            # Do error handling
+            return
+
+        districts = {}
+        # # # # # # # # # # # #
+        # # #     Muc     # # #
+
+        history = response.json()['data'][AGS['muenchen']]['history']
+        trend = mytrend.trend(float(history[-2]['weekIncidence']), float(history[-1]['weekIncidence']))
+        current = history[-1]['weekIncidence']
+
+        districts['munich'] = {
+            'week_incidence': current,
+            'incidence_trend': trend.value
+        }
+
+        # # # # # # # # # # # #
+        # # #   Muc LK    # # #
+
+        history = response.json()['data'][AGS['muenchen_lk']]['history']
+        trend = mytrend.trend(float(history[-2]['weekIncidence']), float(history[-1]['weekIncidence']))
+        current = history[-1]['weekIncidence']
+
+        districts['munich_lk'] = {
+            'week_incidence': current,
+            'incidence_trend': trend.value
+        }
+
+        # # # # # # # # # # # #
+        # # #  Miesbach   # # #
+
+        history = response.json()['data'][AGS['miesbach']]['history']
+        trend = mytrend.trend(float(history[-2]['weekIncidence']), float(history[-1]['weekIncidence']))
+        current = history[-1]['weekIncidence']
+
+        districts['miesbach'] = {
+            'week_incidence': current,
+            'incidence_trend': trend.value
+        }
+
+        return districts
+
+
+    def get_bavaria_incidence_and_hospital_cases(self):
+        # https: // api.corona - zahlen.org / states / BY / history / cases / 7
+        response = requests.get(f'{API_URL_BASE}states/BY')
+        if (response.status_code != 200):
+            # Do error handling
+            return
+        bavaria_week_incidence = round(response.json()['data']['BY']['weekIncidence'], 1)
+        bavaria_hospital_cases_7_days = response.json()['data']['BY']['hospitalization']['cases7Days']
+        self.bavaria_population = response.json()['data']['BY']['population']
+        delta_cases = response.json()['data']['BY']['delta']['cases']
+
+        response = requests.get(f'{API_URL_BASE}states/BY/history/cases/8')
+        if (response.status_code != 200):
+            # Do error handling
+            return
+        history = response.json()['data']['BY']['history']
+
+        cases_last_7_days = 0
+        for el in history:
+            cases_last_7_days += el['cases']
+        # print(f'cases_last_7_days {cases_last_7_days}')
+
+        previous_inz = round((cases_last_7_days - delta_cases) / (self.bavaria_population / 100_000), 1)
+        # print(f'previous_inz {previous_inz}')
+        trend = mytrend.trend(float(previous_inz), float(bavaria_week_incidence))
+        # print(trend)
+        return {'bavaria_week_incidence': bavaria_week_incidence, 'incidence_trend': trend.value,
+                'bavaria_hospital_cases_7_days': bavaria_hospital_cases_7_days}
+
+    def get_bavaria_vaccination(self):
+        response = requests.get(f'{API_URL_BASE}vaccinations')
+        if (response.status_code != 200):
+            # Do error handling
+            return
+        fully_vaccinated = response.json()['data']['states']['BY']['secondVaccination']['vaccinated']
+        bavaria_double_vaccinated_percentage = round((fully_vaccinated / self.bavaria_population) * 100, 1)
+        return bavaria_double_vaccinated_percentage

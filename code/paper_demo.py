@@ -37,6 +37,48 @@ class Paper:
         self.epd.init(0)
         self.epd.Clear(0xFF, 0)
 
+    def ampel(self):
+        try:
+            logging.info("epd3in7 Demo")
+
+            epd = self.epd
+            logging.info("init and Clear")
+            epd.init(0)
+            epd.Clear(0xFF, 0)
+
+            logging.info("ampel-yellow")
+            image = Image.new('1', (epd.height, epd.width),
+                                255)  # 255: clear the frame
+
+            resize = (85,141)
+
+            bmp_red = Image.open(os.path.join(picdir, 'ampel-red2.bmp'))
+            bmp_red = bmp_red.resize(resize, Image.ANTIALIAS)
+
+            bmp_yellow = Image.open(os.path.join(picdir, 'ampel-yellow2.bmp'))
+            bmp_yellow = bmp_yellow.resize(resize, Image.ANTIALIAS)
+
+            bmp_green = Image.open(os.path.join(picdir, 'ampel-green2.bmp'))
+            bmp_green = bmp_green.resize(resize, Image.ANTIALIAS)
+
+            image.paste(bmp_red, (0, 70))
+            image.paste(bmp_yellow, (160, 70))
+            image.paste(bmp_green, (390, 70))
+
+            epd.display_4Gray(epd.getbuffer_4Gray(image))
+            time.sleep(5)
+
+            logging.info("Goto Sleep...")
+            epd.sleep()
+
+        except IOError as e:
+            logging.info(e)
+
+        except KeyboardInterrupt:
+            logging.info("ctrl + c:")
+            epd3in7.epdconfig.module_exit()
+            exit()
+
     def demo(self):
         try:
             logging.info("epd3in7 Demo")
