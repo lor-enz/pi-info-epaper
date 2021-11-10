@@ -13,6 +13,8 @@ def maybe_9_min_update(flip):
     book = db.Databook()
     paper = pap.Paper(book, flip)
 
+    paper.draw_data()
+    return
     if mytime.is_business_hours():
         paper.maybe_refresh_all_covid_data(write_vac=False)
         paper.partial_refresh_vac_for(9 * 60 + 10, clear_vac=False)

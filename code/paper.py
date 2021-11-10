@@ -36,11 +36,11 @@ layout = {
     'num_vac': (20, 35),
     'partial_rect': (13, 52, 423, 124),
 
-    'text_bav_inz': (25-18, 170-15),
+    'text_bav_inz': (25 - 18, 170 - 15),
     'arrow_bav_inz': (3, 204),
     'num_bav_inz': (51, 185),
 
-    'text_muc_inz': (278, 170-15),
+    'text_muc_inz': (278, 170 - 15),
     'arrow_muc_inz': (247, 204),
     'num_muc_inz': (295, 185),
 
@@ -49,6 +49,8 @@ layout = {
 
     'ampel': (100, 100),
 }
+
+
 # Arrow is 48 px. Add 3 px of margin to num
 
 class Paper:
@@ -68,14 +70,80 @@ class Paper:
         self.font_huge = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 90)
         self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 70)
         self.font_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 45)
-        self.font_medium = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 28)
+        self.font_medium = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 52)
         self.font_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
         self.font_very_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 14)
+
+    def cancel_file_exists(self):
+        if os.path.isfile("/home/pi/partial.cancel") or os.path.isfile("~/partial.cancel"):
+            logging.info(f"Cancel file found")
+            return True
+        return False
 
     def write_current_time(self, epd, draw):
         string_to_display = f'{mytime.current_time_hr("%H:%M")}+'
         draw.text(layout['time'], string_to_display, font=self.font_very_small, fill=epd.GRAY4)
         logging.info(f"Add to screen {string_to_display}")
+
+    def help_draw_inc(self, image, draw, label, inc_object, x, y):
+        # Label
+        draw.text((x, y), f'{label}',
+                  font=self.font_small, fill=self.epd.GRAY4)
+        # Number
+        draw.text((x + 55, y + 17), f'{inc_object[0]}',
+                  font=self.font_medium, fill=self.epd.GRAY4)
+
+        arrow_file = f'{inc_object[1]}.bmp'
+        bmp = Image.open(os.path.join(picdir, arrow_file))
+        image.paste(bmp, (x, y + 25))
+
+    def help_draw_generic_info(self, image, draw, label, number, x, y):
+        # Label
+        draw.text((x, y), f'{label}',
+                  font=self.font_small, fill=self.epd.GRAY4)
+        # Number
+        draw.text((x, y + 17), f'{number}',
+                  font=self.font_medium, fill=self.epd.GRAY4)
+
+
+    def draw_data(self):
+        epd = self.epd
+        epd.init(0)
+        epd.Clear(0xFF, 0)
+
+        self.databook.get_munich_inc()
+
+        try:
+            image = Image.new('L', (epd.height, epd.width),
+                              0xFF)  # 0xFF: clear the frame
+            draw = ImageDraw.Draw(image)
+
+            self.write_current_time(epd, draw)
+            # # # # # # # # # # # # #
+            self.help_draw_inc(image, draw, "München Inz:", self.databook.get_munich_inc(), 300, 15)
+            self.help_draw_inc(image, draw, "Miesbach Inz:", self.databook.get_miesbach_inc(), 300, 15 + 80)
+            self.help_draw_inc(image, draw, "Bayern Inz:", self.databook.get_bavaria_inc(), 300, 15 + 2 * 80)
+
+            self.help_draw_generic_info(image, draw, "Bayern Impfquote:", self.databook.get_bavaria_vax(), 15, 15)
+            self.help_draw_generic_info(image, draw, "Bayern KH Fälle:", self.databook.get_bavaria_hospital(), 15,
+                                        15 + 80)
+            self.help_draw_generic_info(image, draw, "Bayern ICU:", self.databook.get_bavaria_icu(), 15,
+                                        15 + 2*80)
+
+            # # # # # # # # # # # # #
+            # save as file, maybe flip, then push to display
+            image.save(r'image.png')
+            if self.flip:
+                image = image.transpose(Image.ROTATE_180)
+            epd.display_4Gray(epd.getbuffer_4Gray(image))
+            epd.sleep()
+        except IOError as e:
+            logging.info(e)
+
+        except KeyboardInterrupt:
+            logging.info("ctrl + c:")
+            epd3in7.epdconfig.module_exit()
+            exit()
 
     def partial_refresh_vac_for(self, duration_secs, clear_vac=True):
         start_time = mytime.current_time()
@@ -117,16 +185,10 @@ class Paper:
             epd3in7.epdconfig.module_exit()
             exit()
 
-    def cancel_file_exists(self):
-        if os.path.isfile("/home/pi/partial.cancel") or os.path.isfile("~/partial.cancel"):
-            logging.info(f"Cancel file found")
-            return True
-        return False
-
     def ampel(self, image):
         ampel_files = ['ampel-red.bmp', 'ampel-yellow.bmp', 'ampel-green.bmp']
 
-        bmp = Image.open(os.path.join(picdir, ampel_files[random.randint(0,2)]))
+        bmp = Image.open(os.path.join(picdir, ampel_files[random.randint(0, 2)]))
         image.paste(bmp, layout['ampel'])
         return image
 
@@ -141,7 +203,6 @@ class Paper:
             self.refresh_all_covid_data(self, write_vac)
         else:
             logging.info(f"Data is the same. Skipping Display change")
-
 
     def refresh_all_covid_data(self, write_vac=True):
         vaccinated_abs = self.databook.get_extrapolated_abs_doses()
@@ -179,7 +240,7 @@ class Paper:
                       font=self.font_medium, fill=epd.GRAY4)
             draw.text(layout['num_bav_inz'], string_bottom_left_2,
                       font=self.font_very_big, fill=epd.GRAY4)
-            #arrow
+            # arrow
             bmp = Image.open(os.path.join(picdir, arrow_file_bav))
             image.paste(bmp, layout['arrow_bav_inz'])
 
@@ -193,8 +254,8 @@ class Paper:
             image.paste(bmp, layout['arrow_muc_inz'])
 
             # LINES
-            #draw.line(layout['line_hor'], fill=0)
-            #draw.line(layout['line_ver'], fill=0)
+            # draw.line(layout['line_hor'], fill=0)
+            # draw.line(layout['line_ver'], fill=0)
 
             # save as file, maybe flip, then push to display
             image.save(r'image.png')

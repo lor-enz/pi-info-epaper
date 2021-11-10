@@ -52,7 +52,7 @@ class Fetcher:
 
     def get_relevant_data_if_needed(self):
         delta = mytime.current_time() - self.last_check_timestamp
-        if delta < 7200:
+        if delta < 3500:
             print(f'Skipping Data Download. Last Update was {round(delta/1)} seconds ago.')
             return False
         self.get_relevant_data()
@@ -64,6 +64,7 @@ class Fetcher:
         self.bavaria_vax = self.get_bavaria_vaccination()
 
         self.last_check_timestamp = mytime.current_time()
+        self.save_storage() # TODO move this?
 
     def get_district_incidence(self):
         response = requests.get(f'{API_URL_BASE}districts/history/frozen-incidence/3')

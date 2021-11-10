@@ -3,7 +3,6 @@ import os
 
 import urllib.request, json
 
-import dataprep as dp
 import mytime as mytime
 import fetcher as fet
 from enum import Enum
@@ -36,6 +35,9 @@ class Databook:
     def load_storage(self):
         if not os.path.isfile(STORAGE_FILE):
             logging.info(f'{STORAGE_FILE} does not exist (yet)')
+            fetcher = fet.Fetcher()
+            fetcher.get_relevant_data()
+            fetcher.save_storage()
             return  # no file?
         from storage import retrieve
         storage = retrieve(STORAGE_FILE)
@@ -73,7 +75,7 @@ class Databook:
         return self.bavaria_dict['bavaria_hospital_cases_7_days']
 
     def get_bavaria_icu(self):
-        return '???'
+        return ' ? '
 
     def get_bavaria_ampel_color(self):
         return Ampel_color.RED.value

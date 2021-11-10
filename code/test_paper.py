@@ -15,25 +15,15 @@ class TestPaper(unittest.TestCase):
         paper = Paper()
         paper.demo()
 
-    def test_paper_ampel(self):
-        from paper_demo import Paper
-        paper = Paper()
-        paper.ampel()
 
-    def test_paper_covid_once(self):
+
+    def test_paper_covid(self):
         import databook as db
         from paper import Paper
         book = db.Databook()
-        paper = Paper(book)
-        paper.maybe_refresh_all_covid_data()
+        paper = Paper(book, flip=True)
+        paper.draw_data()
 
-    def test_paper_covid_continuous(self):
-        import databook as db
-        from paper import Paper
-        book = db.Databook()
-        paper = Paper(book)
-        paper.maybe_refresh_all_covid_data()
-        paper.partial_refresh_vac_for(30)
 
     def test_paper_clear(self):
         from paper_demo import Paper
