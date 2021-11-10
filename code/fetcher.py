@@ -16,7 +16,7 @@ AGS = {
     'miesbach': '09182'
 }
 
-STORAGE_FILE = 'fetcher-storage.json'
+STORAGE_FILE = 'storage.json'
 
 
 class Fetcher:
@@ -35,11 +35,17 @@ class Fetcher:
         storage = retrieve(STORAGE_FILE)
 
         self.last_check_timestamp = storage['last_check_timestamp']
+        self.districts = storage['districts']
+        self.bavaria_dict = storage['bavaria']
+        self.bavaria_vax = storage['bavaria_vax']
         logging.debug(f'Loaded {STORAGE_FILE}')
 
     def save_storage(self):
         storage = {
-            'last_check_timestamp': int(self.last_check_timestamp)
+            'last_check_timestamp': int(self.last_check_timestamp),
+            'districts': self.districts,
+            'bavaria': self.bavaria_dict,
+            'bavaria_vax': self.bavaria_vax,
         }
         from storage import store
         store(STORAGE_FILE, storage)
@@ -53,28 +59,57 @@ class Fetcher:
         return True
 
     def get_relevant_data(self):
-        self.munich_dict = self.get_muenchen_incidence()
+        self.districts = self.get_district_incidence()
         self.bavaria_dict = self.get_bavaria_incidence_and_hospital_cases()
         self.bavaria_vax = self.get_bavaria_vaccination()
 
         self.last_check_timestamp = mytime.current_time()
 
-    def get_muenchen_incidence(self):
+    def get_district_incidence(self):
         response = requests.get(f'{API_URL_BASE}districts/history/frozen-incidence/3')
         if (response.status_code != 200):
             # Do error handling
             return
+
+        districts = {}
+        # # # # # # # # # # # #
+        # # #     Muc     # # #
+
         history = response.json()['data'][AGS['muenchen']]['history']
         trend = mytrend.trend(float(history[-2]['weekIncidence']), float(history[-1]['weekIncidence']))
+        current = history[-1]['weekIncidence']
 
-        response = requests.get(f'{API_URL_BASE}districts/{AGS["muenchen"]}')
-        if (response.status_code != 200):
-            # Do error handling
-            return
+        districts['munich'] = {
+            'week_incidence': current,
+            'incidence_trend': trend.value
+        }
 
-        muenchen_week_incidence = round(response.json()['data']['09162']['weekIncidence'], 1)
+        # # # # # # # # # # # #
+        # # #   Muc LK    # # #
 
-        return {'muenchen_week_incidence': muenchen_week_incidence, 'incidence_trend': trend.value}
+        history = response.json()['data'][AGS['muenchen_lk']]['history']
+        trend = mytrend.trend(float(history[-2]['weekIncidence']), float(history[-1]['weekIncidence']))
+        current = history[-1]['weekIncidence']
+
+        districts['munich_lk'] = {
+            'week_incidence': current,
+            'incidence_trend': trend.value
+        }
+
+        # # # # # # # # # # # #
+        # # #  Miesbach   # # #
+
+        history = response.json()['data'][AGS['miesbach']]['history']
+        trend = mytrend.trend(float(history[-2]['weekIncidence']), float(history[-1]['weekIncidence']))
+        current = history[-1]['weekIncidence']
+
+        districts['miesbach'] = {
+            'week_incidence': current,
+            'incidence_trend': trend.value
+        }
+
+        return districts
+
 
     def get_bavaria_incidence_and_hospital_cases(self):
         # https: // api.corona - zahlen.org / states / BY / history / cases / 7
@@ -111,5 +146,5 @@ class Fetcher:
             # Do error handling
             return
         fully_vaccinated = response.json()['data']['states']['BY']['secondVaccination']['vaccinated']
-        bavaria_double_vaccinated_percentage = f'{(round((fully_vaccinated / self.bavaria_population) * 100, 1))}%'
+        bavaria_double_vaccinated_percentage = round((fully_vaccinated / self.bavaria_population) * 100, 1)
         return bavaria_double_vaccinated_percentage
