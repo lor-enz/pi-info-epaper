@@ -85,15 +85,16 @@ class Paper:
         draw.text(layout['time'], string_to_display, font=self.font_very_small, fill=epd.GRAY4)
         logging.info(f"Add to screen {string_to_display}")
 
-    def help_draw_inc(self, image, draw, label, inc_object, x, y):
+
+    def help_draw_trended_number(self, image, draw, label, trended_object, x, y):
         # Label
         draw.text((x, y), f'{label}',
                   font=self.font_small, fill=self.epd.GRAY4)
         # Number
-        draw.text((x + 55, y + 17), f'{inc_object[0]}',
+        draw.text((x + 55, y + 17), f'{trended_object[0]}',
                   font=self.font_medium, fill=self.epd.GRAY4)
 
-        arrow_file = f'{inc_object[1]}.bmp'
+        arrow_file = f'{trended_object[1]}.bmp'
         bmp = Image.open(os.path.join(picdir, arrow_file))
         image.paste(bmp, (x, y + 25))
 
@@ -120,16 +121,20 @@ class Paper:
 
             self.write_current_time(epd, draw)
             # # # # # # # # # # # # #
-            self.help_draw_inc(image, draw, "München Inz:", self.databook.get_munich_inc(), 300, 15)
-            self.help_draw_inc(image, draw, "Miesbach Inz:", self.databook.get_miesbach_inc(), 300, 15 + 80)
-            self.help_draw_inc(image, draw, "Bayern Inz:", self.databook.get_bavaria_inc(), 300, 15 + 2 * 80)
+            self.help_draw_trended_number(image, draw, "München Inz:", self.databook.get_munich_inc(), 300, 15)
+            self.help_draw_trended_number(image, draw, "Miesbach Inz:", self.databook.get_miesbach_inc(), 300, 15 + 80)
+            self.help_draw_trended_number(image, draw, "Bayern Inz:", self.databook.get_bavaria_inc(), 300, 15 + 2 * 80)
 
             self.help_draw_generic_info(image, draw, "Bayern Impfquote:", self.databook.get_bavaria_vax(), 15, 15)
             self.help_draw_generic_info(image, draw, "Bayern KH Fälle:", self.databook.get_bavaria_hospital(), 15,
                                         15 + 80)
-            self.help_draw_generic_info(image, draw, "Bayern ICU:", self.databook.get_bavaria_icu(), 15,
+            self.help_draw_trended_number(image, draw, "Bayern ICU:", self.databook.get_bavaria_icu(), 15,
                                         15 + 2*80)
 
+            # Ampel
+            ampel_file = self.databook.evaluate_ampel_status().value[0]
+            bmp = Image.open(os.path.join(picdir, ampel_file))
+            image.paste(bmp, (194, 20))
             # # # # # # # # # # # # #
             # save as file, maybe flip, then push to display
             image.save(r'image.png')

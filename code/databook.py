@@ -19,9 +19,9 @@ STORAGE_FILE = 'storage.json'
 
 
 class Ampel_color(Enum):
-    RED = 'pic/ampel-red-small.bmp',
-    YELLOW = 'pic/ampel-yellow-small.bmp',
-    GREEN = 'pic/ampel-green-small.bmp'
+    RED = 'ampel-red-small.bmp',
+    YELLOW = 'ampel-yellow-small.bmp',
+    GREEN = 'ampel-green-small.bmp'
 
 
 class Databook:
@@ -46,6 +46,7 @@ class Databook:
         self.districts = storage['districts']
         self.bavaria_dict = storage['bavaria']
         self.bavaria_vax = storage['bavaria_vax']
+        self.bavaria_icu = storage['bavaria_icu']
         logging.debug(f'Loaded {STORAGE_FILE}')
 
     def get_munich_inc(self):
@@ -75,7 +76,22 @@ class Databook:
         return self.bavaria_dict['bavaria_hospital_cases_7_days']
 
     def get_bavaria_icu(self):
-        return ' ? '
+        icu_cases = round(self.bavaria_icu['icu'])
+        trend = self.bavaria_icu['icu_trend']
+        return icu_cases, trend
 
     def get_bavaria_ampel_color(self):
         return Ampel_color.RED.value
+
+    def evaluate_ampel_status(self):
+        hosp = self.get_bavaria_hospital()
+        icu = self.get_bavaria_icu()[0]
+        ampel = Ampel_color.GREEN
+        if icu >= 600:
+            ampel = Ampel_color.RED
+        elif icu >= 450:
+            ampel = Ampel_color.YELLOW
+        elif hosp >= 1200:
+            ampel = Ampel_color.YELLOW
+        logging.info(f'Decided on Ampel being: {ampel}')
+        return ampel
