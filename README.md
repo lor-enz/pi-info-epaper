@@ -9,13 +9,26 @@ I put it up on the fridge in my kitchen which makes for a convenient way to get 
 ## What is does
 It displays information on the current covid-19 situation in Bavaria and Munich.
 
-![pi-info-epaper](https://user-images.githubusercontent.com/33176142/111890186-6d5a0980-89e7-11eb-8aa8-7fe316021a20.jpg)
+![paper-showcase-ampel](https://user-images.githubusercontent.com/33176142/142193751-604a572e-98f0-4e7e-89c7-a93ce78e3332.jpg)
 
-- Large number in the middle: Vaccination doses given out in Bavaria in real time (changes as fast as the e-paper allows, so about every 5 seconds). Real time means it's extrapolated to the current moment according to some assumptions. The official numbers only show vaccinations up to the end of the previous day.
-- Bottom left: The Inzidenzwert of Bavaria 
-- Bottom right: The Inzidenzwert of Munich, Bavaria
 
-Inzidenzwert = (New infections per 100k from the last 7 days)
+- Percentage of fully vaccinated people in bavaria
+- Number of hospitalized people in bavaria
+- Number of patients in intensiv care in bavaria
+- The 7 days Incidence* of Munich, Bavaria 
+- The 7 days Incidence* of Miesbach, Bavaria 
+- The 7 days Incidence* of Bavaria 
+
+&ast; 7 days Incidence is the number of new infections in the last 7 days per 100k people
+
+### Previous version with constantly updating screen (gif)
+
+![paper-vax-update-showcase](https://user-images.githubusercontent.com/33176142/142194954-c7d4dd77-aa9f-4d4d-9a38-d57d85000496.gif)
+
+This is an older software version that estimated how many vaccine doses would be given out on a day and would update the number as fast as the screen allows it (~every 5 seconds).
+
+It also shows a nice 3D printed case for the screen, adapter and pizero I designed myself :)
+
 ## Technologies and setup
 
 
