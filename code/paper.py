@@ -90,22 +90,24 @@ class Paper:
         draw.text((x, y), f'{label}',
                   font=self.font_small, fill=self.epd.GRAY4)
         # Number
+
+
         draw.text((x + 51, y + 19), f'{trended_object[0]}',
-                  font=self.font_medium, fill=self.epd.GRAY4)
+                  font=self.font_medium, fill=self.freshness_to_grey(trended_object[2]))
 
         arrow_file = f'{trended_object[1]}.bmp'
         bmp = Image.open(os.path.join(picdir, arrow_file))
         image.paste(bmp, (x, y + 27))
 
-    def help_draw_generic_info(self, image, draw, label, number, xy):
+    def help_draw_generic_info(self, image, draw, label, number_object, xy):
         x = xy[0]
         y = xy[1]
         # Label
         draw.text((x, y), f'{label}',
                   font=self.font_small, fill=self.epd.GRAY4)
         # Number
-        draw.text((x, y + 19), f'{number}',
-                  font=self.font_medium, fill=self.epd.GRAY4)
+        draw.text((x, y + 19), f'{number_object[0]}',
+                  font=self.font_medium, fill=self.freshness_to_grey(number_object[1]))
 
     def draw_data(self):
         epd = self.epd
@@ -130,7 +132,7 @@ class Paper:
             self.help_draw_trended_number(image, draw, "Bayern ICU:", self.databook.get_bavaria_icu(), layout['icu_bav'])
 
             # Ampel
-            ampel_file = self.databook.evaluate_ampel_status().value[0]
+            ampel_file = self.databook.evaluate_ampel_status().value
             bmp = Image.open(os.path.join(picdir, ampel_file))
             image.paste(bmp, layout['ampel'])
             # # # # # # # # # # # # #
@@ -148,12 +150,15 @@ class Paper:
             epd3in7.epdconfig.module_exit()
             exit()
 
-    def ampel(self, image):
-        ampel_files = ['ampel-red.bmp', 'ampel-yellow.bmp', 'ampel-green.bmp']
+    def freshness_to_grey(self, freshness):
+        if (freshness.value == 0):
+            return self.epd.GRAY4
+        if (freshness.value == 1):
+            return self.epd.GRAY3
+        if (freshness.value == 2):
+            return self.epd.GRAY2
+        return self.epd.GRAY1
 
-        bmp = Image.open(os.path.join(picdir, ampel_files[random.randint(0, 2)]))
-        image.paste(bmp, layout['ampel'])
-        return image
 
     def clear(self):
         self.epd.init(0)

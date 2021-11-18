@@ -56,7 +56,6 @@ class Fetcher:
             self.bavaria_vax = storage['bavaria_vax']
             self.last_check_timestamp = storage['last_check_timestamp']
             self.bavaria_icu = storage['bavaria_icu']
-            self.timestamp_brdata = storage['timestamp_brdata']
             logging.debug(f'Loaded {STORAGE_FILE}')
         except:
             logging.error(f'Error loading storage. Deleting storage.json to start fresh.')
@@ -73,7 +72,6 @@ class Fetcher:
             'bavaria': self.bavaria_dict,
             'bavaria_vax': self.bavaria_vax,
             'bavaria_icu': self.bavaria_icu,
-            'timestamp_brdata': self.timestamp_brdata
         }
         from storage import store
         store(STORAGE_FILE, storage)
@@ -116,7 +114,8 @@ class Fetcher:
 
         return {
             'week_incidence': current,
-            'incidence_trend': trend.value
+            'incidence_trend': trend.value,
+            'date': history[-1]['date']
         }
 
     def get_bavaria_incidence_and_hospital_cases(self):
@@ -125,11 +124,12 @@ class Fetcher:
         if (response.status_code != 200):
             logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
             return {'bavaria_week_incidence': -1, 'incidence_trend': 'STEADY',
-                'bavaria_hospital_cases_7_days': -1}
+                    'bavaria_hospital_cases_7_days': -1}
         bavaria_week_incidence = round(response.json()['data']['BY']['weekIncidence'], 1)
         bavaria_hospital_cases_7_days = response.json()['data']['BY']['hospitalization']['cases7Days']
         self.bavaria_population = response.json()['data']['BY']['population']
         delta_cases = response.json()['data']['BY']['delta']['cases']
+        timestamp_hosp = response.json()['meta']['lastUpdate']
 
         response = requests.get(f'{API_CZ_BASE_URL}states/BY/history/cases/8')
         if (response.status_code != 200):
@@ -142,12 +142,15 @@ class Fetcher:
         for el in history:
             cases_last_7_days += el['cases']
 
-
         previous_inz = round((cases_last_7_days - delta_cases) / (self.bavaria_population / 100_000), 1)
 
         trend = mytrend.trend(float(previous_inz), float(bavaria_week_incidence))
-        return {'bavaria_week_incidence': bavaria_week_incidence, 'incidence_trend': trend.value,
-                'bavaria_hospital_cases_7_days': bavaria_hospital_cases_7_days}
+        timestamp_bav_inc = history[-1]['date']
+        return {'bavaria_week_incidence': bavaria_week_incidence,
+                'incidence_trend': trend.value,
+                'bavaria_hospital_cases_7_days': bavaria_hospital_cases_7_days,
+                'date': timestamp_bav_inc
+                }
 
     def get_bavaria_vaccination(self):
         response = requests.get(f'{API_CZ_BASE_URL}vaccinations')
@@ -155,8 +158,12 @@ class Fetcher:
             logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
             return -344.04
         fully_vaccinated = response.json()['data']['states']['BY']['secondVaccination']['vaccinated']
+
         bavaria_double_vaccinated_percentage = round((fully_vaccinated / self.bavaria_population) * 100, 1)
-        return bavaria_double_vaccinated_percentage
+        return {
+            'percentage': bavaria_double_vaccinated_percentage,
+            'date': response.json()['meta']['lastUpdate']
+        }
 
     # # # # # #
 
@@ -165,17 +172,17 @@ class Fetcher:
         if (response.status_code != 200):
             logging.error(f'Problem! {API_BR_BASE_URL} returned status code: {response.status_code}')
             return {
-            'icu': '?',
-            'icu_trend': 'STEADY'
-        }
+                'icu': '?',
+                'icu_trend': 'STEADY'
+            }
         history = response.json()[-2:]
-        self.timestamp_brdata = response.json()[-1]['date']
 
         trend = mytrend.trend(float(history[-2]['faelleCovidAktuell']), float(history[-1]['faelleCovidAktuell']))
         current = history[-1]['faelleCovidAktuell']
 
         result = {
             'icu': current,
-            'icu_trend': trend.value
+            'icu_trend': trend.value,
+            'date': response.json()[-1]['date']
         }
         return result
