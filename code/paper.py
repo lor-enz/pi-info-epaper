@@ -124,7 +124,7 @@ class Paper:
             self.write_current_time(epd, draw)
             # # # # # # # # # # # # #
             self.help_draw_trended_number(image, draw, "München Inz:", self.databook.get_munich_inc(), layout['inc_muc'])
-            self.help_draw_trended_number(image, draw, "Miesbach Inz:", self.databook.get_miesbach_inc(), layout['inc_miesbach'])
+            self.help_draw_trended_number(image, draw, "München LK Inz:", self.databook.get_munich_lk_inc(), layout['inc_miesbach'])
             self.help_draw_trended_number(image, draw, "Bayern Inz:", self.databook.get_bavaria_inc(), layout['inc_bav'])
 
             self.help_draw_generic_info(image, draw, "Bayern Impfquote:", self.databook.get_bavaria_vax(), layout['vax_bav'])
