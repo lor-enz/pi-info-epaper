@@ -94,7 +94,7 @@ class Fetcher:
         self.save_storage()  # TODO move this?
 
     def get_district_incidence(self):
-        response = requests.get(f'{API_CZ_BASE_URL}districts/history/frozen-incidence/3')
+        response = requests.get(f'{API_CZ_BASE_URL}districts/history/frozen-incidence/20')
         if (response.status_code != 200):
             # Do error handling
             logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
