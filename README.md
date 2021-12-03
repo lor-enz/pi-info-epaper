@@ -96,7 +96,6 @@ sudo make install
 
 ```sh
 cd ~
-sudo apt install wiringpi
 wget https://project-downloads.drogon.net/wiringpi-latest.deb
 sudo dpkg -i wiringpi-latest.deb
 gpio -v
@@ -104,10 +103,6 @@ gpio -v
 if gpio shows a version number it's installed correctly :)
 
 ```sh
-sudo apt update
-sudo apt install -y python-pip python-pil python-numpy
-sudo pip install RPi.GPIO spidev
-
 sudo apt update
 sudo apt install -y python3-pip python3-pil python3-numpy
 sudo pip3 install RPi.GPIO spidev
@@ -142,18 +137,21 @@ pip3 install pytz
 sudo apt install -y python3-pandas
 ```
 
-figure out where your python3 is install with ```which python3``` and where you cloned the repo. 
-Then adapt the script.sh in the root folder of this repo if necessary. 
-Run it to see if it's working. You might need to cancel the Partial Update with Ctrl+C since it run for about 9 minutes.
+figure out where your python3 is install with ```which python3``` and check to which directory you cloned this github repo. 
+Adapt the script.sh in the root folder of this repo if necessary. 
+
 
 Create a logfile by runnning ```touch ~/info-screen.log```
-
+Run script.sh it to see if it's working. 
+ 
 then configure a cronjob by by running ```crontab -e```
 and add the following line:
 
-```*/10 * * * * ~/pi-info-epaper/script.sh >> ~/info-screen.log 2>&1```
+```10 */1 * * * ~/pi-info-epaper/script.sh >> ~/info-screen.log 2>&1```
 
-which runs the script every 10 minutes
+which runs the script at minute 10 past every hour.
+ 
+That's it you're done!
 
 </p>
 </details>
