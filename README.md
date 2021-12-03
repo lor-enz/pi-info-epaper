@@ -96,7 +96,6 @@ sudo make install
 
 ```sh
 cd ~
-sudo apt install wiringpi
 wget https://project-downloads.drogon.net/wiringpi-latest.deb
 sudo dpkg -i wiringpi-latest.deb
 gpio -v
@@ -104,10 +103,6 @@ gpio -v
 if gpio shows a version number it's installed correctly :)
 
 ```sh
-sudo apt update
-sudo apt install -y python-pip python-pil python-numpy
-sudo pip install RPi.GPIO spidev
-
 sudo apt update
 sudo apt install -y python3-pip python3-pil python3-numpy
 sudo pip3 install RPi.GPIO spidev
