@@ -94,7 +94,8 @@ class Fetcher:
         self.save_storage()  # TODO move this?
 
     def get_district_incidence(self):
-        response = requests.get(f'{API_CZ_BASE_URL}districts/history/frozen-incidence/20')
+        # TODO Workaround: Changed from frozen-incidence to incidence since frozen-incidence is currently broken on the API. This just breaks our ability to get the trend.
+        response = requests.get(f'{API_CZ_BASE_URL}districts/history/incidence/20')
         if (response.status_code != 200):
             # Do error handling
             logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
@@ -111,11 +112,12 @@ class Fetcher:
         history = response.json()['data'][ags_id]['history']
         trend = mytrend.trend(float(history[-2]['weekIncidence']), float(history[-1]['weekIncidence']))
         current = history[-1]['weekIncidence']
-
+        # TODO Workaround: Since we're currently using the incidence instead of frozen-incidence we don't have the correct trend.
+        # TODO Workaround: The date is shifted by one. So we're just putting it 23 hours and 59 minutes into the future
         return {
             'week_incidence': current,
-            'incidence_trend': trend.value,
-            'date': history[-1]['date']
+            'incidence_trend': mytrend.Trend.UNKNOWN.value,
+            'date': history[-1]['date'].replace('00:00:00.000Z', '23:59:00.000Z')
         }
 
     def get_bavaria_incidence_and_hospital_cases(self):

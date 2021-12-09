@@ -7,6 +7,7 @@ class Trend(Enum):
     STEADY = "STEADY"
     UP_STRONG = "UP_STRONG"
     DOWN_STRONG = "DOWN_STRONG"
+    UNKNOWN = "UNKNOWN"
 
 
 def trend(previous, current):
