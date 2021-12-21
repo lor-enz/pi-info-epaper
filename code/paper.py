@@ -128,8 +128,8 @@ class Paper:
             self.help_draw_trended_number(image, draw, "Bayern Inz:", self.databook.get_bavaria_inc(), layout['inc_bav'])
 
             self.help_draw_generic_info(image, draw, "Bayern Impfquote:", self.databook.get_bavaria_vax(), layout['vax_bav'])
-            self.help_draw_generic_info(image, draw, "Bayern KH Fälle:", self.databook.get_bavaria_hospital(), layout['hosp_bav'])
-            self.help_draw_trended_number(image, draw, "Bayern ICU:", self.databook.get_bavaria_icu(), layout['icu_bav'])
+            self.help_draw_generic_info(image, draw, "Bayern Cov-19 KH Inz:", self.databook.get_bavaria_hospital(), layout['hosp_bav'])
+            self.help_draw_trended_number(image, draw, "Bayern ICU Fälle:", self.databook.get_bavaria_icu(), layout['icu_bav'])
 
             # Ampel
             ampel_file = self.databook.evaluate_ampel_status().value
