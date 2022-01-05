@@ -2,11 +2,11 @@
 
 This is a python project running on a raspberry pi zero w of mine. The pi has a 3.7 Inch Waveshare e paper (and display controller) attached to it.
 
-The code is intended to run as a cronjob every 10 minutes.
+The code is intended to run as a regular cronjob.
 It will download Germanys current information regarding covid-19 infections and vaccinations and display them on the screen. 
 I put it up on the fridge in my kitchen which makes for a convenient way to get a sense for the numbers.
 
-## What is does
+## What it does
 It displays information on the current covid-19 situation in Bavaria and Munich.
 
 ![paper-showcase-ampel](https://user-images.githubusercontent.com/33176142/142193751-604a572e-98f0-4e7e-89c7-a93ce78e3332.jpg)
@@ -17,7 +17,8 @@ It displays information on the current covid-19 situation in Bavaria and Munich.
 - Number of patients in intensiv care in bavaria
 - The 7 days Incidence* of Munich, Bavaria 
 - The 7 days Incidence* of Miesbach, Bavaria 
-- The 7 days Incidence* of Bavaria 
+- The 7 days Incidence* of Bavaria
+- A traffic light that displays the current 'Corona Ampel' Situation.  (See https://krankenhausampel.info/ for more information)
 
 &ast; 7 days Incidence is the number of new infections in the last 7 days per 100k people
 
@@ -25,7 +26,7 @@ It displays information on the current covid-19 situation in Bavaria and Munich.
 
 ![paper-vax-update-showcase](https://user-images.githubusercontent.com/33176142/142194954-c7d4dd77-aa9f-4d4d-9a38-d57d85000496.gif)
 
-This is an older software version that estimated how many vaccine doses would be given out on a day and would update the number as fast as the screen allows it (~every 5 seconds).
+This is an older software version that estimated how many vaccine doses would be given out on a day. Assuming the vaccinations are distributed over the working hours of the day it and would update the number as fast as the screen allows it (~every 5 seconds).
 
 It also shows a nice 3D printed case for the screen, adapter and pizero I designed myself :)
 
@@ -34,7 +35,7 @@ It also shows a nice 3D printed case for the screen, adapter and pizero I design
 
 ### Hardware 
 
-The hardware probably costs less than 50€ 
+The hardware probably costs about 50€ 
 
 - **[Raspberry Pi zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/)** with pins
 
