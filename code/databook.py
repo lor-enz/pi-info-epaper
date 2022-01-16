@@ -96,7 +96,7 @@ class Databook:
         return Ampel_color.RED.value
 
     def evaluate_ampel_status(self):
-        hosp = self.get_bavaria_hospital()
+        hosp = self.get_bavaria_hospital()[0]
         icu = self.get_bavaria_icu()[0]
         ampel = Ampel_color.GREEN
         if icu >= 600:
@@ -105,7 +105,7 @@ class Databook:
             ampel = Ampel_color.YELLOW
         elif hosp >= 1200:
             ampel = Ampel_color.YELLOW
-        logging.info(f'Decided on Ampel being: {ampel}')
+        logging.info(f'Decided on Ampel being: {ampel} based on hosp:{hosp} and icu:{icu}')
         return ampel
 
     SHIFT_DICT = {
