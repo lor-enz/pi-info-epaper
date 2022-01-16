@@ -78,7 +78,7 @@ class Fetcher:
 
     def get_relevant_data_if_needed(self):
         delta = mytime.current_time() - self.last_check_timestamp
-        if delta < 3500:
+        if delta < 1680:
             logging.info(f'Skipping Data Download. Last Update was {round(delta / 1)} seconds ago.')
             return False
         self.get_relevant_data()
