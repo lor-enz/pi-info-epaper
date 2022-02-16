@@ -34,7 +34,6 @@ AGS = {
 
 STORAGE_FILE = 'storage.json'
 
-
 class Fetcher:
     last_check_timestamp = 0
 
@@ -94,19 +93,23 @@ class Fetcher:
         self.save_storage()  # TODO move this?
 
     def get_district_incidence(self):
-        # TODO Workaround: Changed from frozen-incidence to incidence since frozen-incidence is currently broken on the API. This just breaks our ability to get the trend.
-        response = requests.get(f'{API_CZ_BASE_URL}districts/history/incidence/20')
-        if (response.status_code != 200):
-            # Do error handling
-            logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
-            return
+        try:
+            # TODO Workaround: Changed from frozen-incidence to incidence since frozen-incidence is currently broken on the API. This just breaks our ability to get the trend.
+            response = requests.get(f'{API_CZ_BASE_URL}districts/history/incidence/20')
+            if (response.status_code != 200):
+                # Do error handling
+                logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
+                return
 
-        districts = {}
-        districts['munich'] = self.district_helper_function(response, AGS['muenchen'])
-        districts['munich_lk'] = self.district_helper_function(response, AGS['muenchen_lk'])
-        districts['miesbach'] = self.district_helper_function(response, AGS['miesbach'])
+            districts = {}
+            districts['munich'] = self.district_helper_function(response, AGS['muenchen'])
+            districts['munich_lk'] = self.district_helper_function(response, AGS['muenchen_lk'])
+            districts['miesbach'] = self.district_helper_function(response, AGS['miesbach'])
 
-        return districts
+            return districts
+        except Exception as e:
+            logging.exception(f"ERROR when getting data (get_district_incidence). Using old value.")
+            return self.districts
 
     def district_helper_function(self, response, ags_id):
         history = response.json()['data'][ags_id]['history']
@@ -121,70 +124,82 @@ class Fetcher:
         }
 
     def get_bavaria_incidence_and_hospital_cases(self):
-        # https: // api.corona - zahlen.org / states / BY / history / cases / 7
-        response = requests.get(f'{API_CZ_BASE_URL}states/BY')
-        if (response.status_code != 200):
-            logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
-            return {'bavaria_week_incidence': -1, 'incidence_trend': 'STEADY',
-                    'bavaria_hospital_cases_7_days': -1}
-        bavaria_week_incidence = round(response.json()['data']['BY']['weekIncidence'], 1)
-        bavaria_hospital_cases_7_days = response.json()['data']['BY']['hospitalization']['cases7Days']
-        self.bavaria_population = response.json()['data']['BY']['population']
-        delta_cases = response.json()['data']['BY']['delta']['cases']
-        timestamp_hosp = response.json()['meta']['lastUpdate']
+        try:
+            # https: // api.corona - zahlen.org / states / BY / history / cases / 7
+            response = requests.get(f'{API_CZ_BASE_URL}states/BY')
+            if (response.status_code != 200):
+                logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
+                return {'bavaria_week_incidence': -1, 'incidence_trend': 'STEADY',
+                        'bavaria_hospital_cases_7_days': -1}
+            bavaria_week_incidence = round(response.json()['data']['BY']['weekIncidence'], 1)
+            bavaria_hospital_cases_7_days = response.json()['data']['BY']['hospitalization']['cases7Days']
+            self.bavaria_population = response.json()['data']['BY']['population']
+            delta_cases = response.json()['data']['BY']['delta']['cases']
+            timestamp_hosp = response.json()['meta']['lastUpdate']
 
-        response = requests.get(f'{API_CZ_BASE_URL}states/BY/history/cases/8')
-        if (response.status_code != 200):
-            logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
-            return {'bavaria_week_incidence': -1, 'incidence_trend': 'STEADY',
-                    'bavaria_hospital_cases_7_days': -1}
-        history = response.json()['data']['BY']['history']
+            response = requests.get(f'{API_CZ_BASE_URL}states/BY/history/cases/8')
+            if (response.status_code != 200):
+                logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
+                return {'bavaria_week_incidence': -1, 'incidence_trend': 'STEADY',
+                        'bavaria_hospital_cases_7_days': -1}
+            history = response.json()['data']['BY']['history']
 
-        cases_last_7_days = 0
-        for el in history:
-            cases_last_7_days += el['cases']
+            cases_last_7_days = 0
+            for el in history:
+                cases_last_7_days += el['cases']
 
-        previous_inz = round((cases_last_7_days - delta_cases) / (self.bavaria_population / 100_000), 1)
+            previous_inz = round((cases_last_7_days - delta_cases) / (self.bavaria_population / 100_000), 1)
 
-        trend = mytrend.trend(float(previous_inz), float(bavaria_week_incidence))
-        timestamp_bav_inc = history[-1]['date']
-        return {'bavaria_week_incidence': bavaria_week_incidence,
-                'incidence_trend': trend.value,
-                'bavaria_hospital_cases_7_days': bavaria_hospital_cases_7_days,
-                'date': timestamp_bav_inc
-                }
+            trend = mytrend.trend(float(previous_inz), float(bavaria_week_incidence))
+            timestamp_bav_inc = history[-1]['date']
+            return {'bavaria_week_incidence': bavaria_week_incidence,
+                    'incidence_trend': trend.value,
+                    'bavaria_hospital_cases_7_days': bavaria_hospital_cases_7_days,
+                    'date': timestamp_bav_inc
+                    }
+        except Exception as e:
+            logging.exception(f"ERROR when getting data (get_bavaria_incidence_and_hospital_cases). Using old value. ")
+            return self.bavaria_dict
 
     def get_bavaria_vaccination(self):
-        response = requests.get(f'{API_CZ_BASE_URL}vaccinations')
-        if (response.status_code != 200):
-            logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
-            return -344.04
-        fully_vaccinated = response.json()['data']['states']['BY']['secondVaccination']['vaccinated']
+        try:
+            response = requests.get(f'{API_CZ_BASE_URL}vaccinations')
+            if (response.status_code != 200):
+                logging.error(f'Problem! {API_CZ_BASE_URL} returned status code: {response.status_code}')
+                return -344.04
+            fully_vaccinated = response.json()['data']['states']['BY']['secondVaccination']['vaccinated']
 
-        bavaria_double_vaccinated_percentage = round((fully_vaccinated / self.bavaria_population) * 100, 1)
-        return {
-            'percentage': bavaria_double_vaccinated_percentage,
-            'date': response.json()['meta']['lastUpdate']
-        }
+            bavaria_double_vaccinated_percentage = round((fully_vaccinated / self.bavaria_population) * 100, 1)
+            return {
+                'percentage': bavaria_double_vaccinated_percentage,
+                'date': response.json()['meta']['lastUpdate']
+            }
+        except Exception as e:
+            logging.exception(f"ERROR when getting data (get_bavaria_vaccination). Using old value.")
+            return self.bavaria_vax
 
     # # # # # #
 
     def get_bavaria_icu(self):
-        response = requests.get(f'{API_BR_BASE_URL}{API_BR_MODIFIER_BY_ICU}')
-        if (response.status_code != 200):
-            logging.error(f'Problem! {API_BR_BASE_URL} returned status code: {response.status_code}')
-            return {
-                'icu': '?',
-                'icu_trend': 'STEADY'
+        try:
+            response = requests.get(f'{API_BR_BASE_URL}{API_BR_MODIFIER_BY_ICU}')
+            if (response.status_code != 200):
+                logging.error(f'Problem! {API_BR_BASE_URL} returned status code: {response.status_code}')
+                return {
+                    'icu': '?',
+                    'icu_trend': 'STEADY'
+                }
+            history = response.json()[-2:]
+
+            trend = mytrend.trend(float(history[-2]['faelleCovidAktuell']), float(history[-1]['faelleCovidAktuell']))
+            current = history[-1]['faelleCovidAktuell']
+
+            result = {
+                'icu': current,
+                'icu_trend': trend.value,
+                'date': response.json()[-1]['date']
             }
-        history = response.json()[-2:]
-
-        trend = mytrend.trend(float(history[-2]['faelleCovidAktuell']), float(history[-1]['faelleCovidAktuell']))
-        current = history[-1]['faelleCovidAktuell']
-
-        result = {
-            'icu': current,
-            'icu_trend': trend.value,
-            'date': response.json()[-1]['date']
-        }
-        return result
+            return result
+        except Exception as e:
+            logging.exception(f"ERROR when getting data (get_bavaria_icu). Using old value.")
+            return self.bavaria_icu
