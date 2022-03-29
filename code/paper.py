@@ -29,7 +29,6 @@ def flip_partial(partial, paper_w, paper_h):
         return new_x_s, new_y_s, new_x_e, new_y_e
 
 
-
 SPACING = 87
 VERTICAL_PAD = 10
 PAD = 10
@@ -90,9 +89,8 @@ class Paper:
         draw.text((x, y), f'{label}',
                   font=self.font_small, fill=self.epd.GRAY4)
         # Number
-
-
-        draw.text((x + 51, y + 19), f'{trended_object[0]}',
+        number = "?" if trended_object[0] < 0 else f"{trended_object[0]}"
+        draw.text((x + 51, y + 19), number,
                   font=self.font_medium, fill=self.freshness_to_grey(trended_object[2]))
 
         arrow_file = f'{trended_object[1]}.bmp'
@@ -158,7 +156,6 @@ class Paper:
         if (freshness.value == 2):
             return self.epd.GRAY2
         return self.epd.GRAY1
-
 
     def clear(self):
         self.epd.init(0)

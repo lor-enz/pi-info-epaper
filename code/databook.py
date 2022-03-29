@@ -23,6 +23,7 @@ class Ampel_color(Enum):
     YELLOW = 'ampel-yellow-small.bmp'
     GREEN = 'ampel-green-small.bmp'
 
+
 class Freshness(Enum):
     FRESH = 0
     DAY_OLD = 1
@@ -57,25 +58,41 @@ class Databook:
     def get_munich_inc(self):
         inz = round(self.districts['munich']['week_incidence'])
         trend = self.districts['munich']['incidence_trend']
-        freshness = self.evaluate_freshness(self.districts['munich']['date'], label="München Inc")
+        try:
+            freshness = self.evaluate_freshness(self.districts['munich']['date'], label="München Inc")
+        except:
+            logging.error("something is wrong with munich_sk inc")
+            return -1, mytrend.Trend.UNKNOWN.value, Freshness.FRESH
         return inz, trend, freshness
 
     def get_miesbach_inc(self):
         inz = round(self.districts['miesbach']['week_incidence'])
         trend = self.districts['miesbach']['incidence_trend']
-        freshness = self.evaluate_freshness(self.districts['miesbach']['date'], label="Miesbach Inc")
+        try:
+            freshness = self.evaluate_freshness(self.districts['miesbach']['date'], label="Miesbach Inc")
+        except:
+            logging.error("something is wrong with miesbach inc")
+            return -1, mytrend.Trend.UNKNOWN.value, Freshness.FRESH
         return inz, trend, freshness
 
     def get_munich_lk_inc(self):
         inz = round(self.districts['munich_lk']['week_incidence'])
         trend = self.districts['munich_lk']['incidence_trend']
-        freshness = self.evaluate_freshness(self.districts['munich_lk']['date'], label="München LK Inc")
+        try:
+            freshness = self.evaluate_freshness(self.districts['munich_lk']['date'], label="München LK Inc")
+        except:
+            logging.error("something is wrong with munich_lk inc")
+            return -1, mytrend.Trend.UNKNOWN.value, Freshness.FRESH
         return inz, trend, freshness
 
     def get_bavaria_inc(self):
         inz = round(self.bavaria_dict['bavaria_week_incidence'])
         trend = self.bavaria_dict['incidence_trend']
-        freshness = self.evaluate_freshness(self.bavaria_dict['date'], label="Bayern Inc")
+        try:
+            freshness = self.evaluate_freshness(self.bavaria_dict['date'], label="Bayern Inc")
+        except:
+            logging.error("something is wrong with bavaria inc")
+            return -1, mytrend.Trend.UNKNOWN.value, Freshness.FRESH
         return inz, trend, freshness
 
     def get_bavaria_vax(self):
@@ -127,6 +144,7 @@ class Databook:
         'Bavaria Hosp': '%Y-%m-%dT%H:%M:%S.%fZ',
         'Bavaria Vax': '%Y-%m-%dT%H:%M:%S.%fZ',
     }
+
     # shift for disctricts = 0
     # shift for bav inc = 1
     def evaluate_freshness(self, date, label):
@@ -135,10 +153,10 @@ class Databook:
             shift = self.SHIFT_DICT[label]
         except:
             shift = 0
-            format='%Y-%m-%dT%H:%M:%S.%fZ'
+            format = '%Y-%m-%dT%H:%M:%S.%fZ'
 
         timestamp = mytime.string2timestamp(date, time_format=format)
-        delta_in_secs = mytime.current_time() - timestamp - 24*60*60*shift
+        delta_in_secs = mytime.current_time() - timestamp - 24 * 60 * 60 * shift
         delta_in_hours = round(delta_in_secs / 60 / 60)
         logging.info(f"{label} is {delta_in_hours} hours old")
 
