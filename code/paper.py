@@ -36,9 +36,9 @@ RIGHT_X = 293
 layout = {
     'time': (194, 0),
 
-    'inc_muc': (RIGHT_X, PAD),
-    'inc_miesbach': (RIGHT_X, PAD + SPACING),
-    'inc_bav': (RIGHT_X, PAD + 2 * SPACING),
+    'inc_top': (RIGHT_X, PAD),
+    'inc_middle': (RIGHT_X, PAD + SPACING),
+    'inc_bottom': (RIGHT_X, PAD + 2 * SPACING),
 
     'vax_bav': (PAD, PAD),
     'hosp_bav': (PAD, PAD + SPACING),
@@ -121,9 +121,9 @@ class Paper:
 
             self.write_current_time(epd, draw)
             # # # # # # # # # # # # #
-            self.help_draw_trended_number(image, draw, "München Inz:", self.databook.get_munich_inc(), layout['inc_muc'])
-            self.help_draw_trended_number(image, draw, "München LK Inz:", self.databook.get_munich_lk_inc(), layout['inc_miesbach'])
-            self.help_draw_trended_number(image, draw, "Bayern Inz:", self.databook.get_bavaria_inc(), layout['inc_bav'])
+            self.help_draw_trended_number(image, draw, "München Inz:", self.databook.get_munich_inc(), layout['inc_top'])
+            self.help_draw_trended_number(image, draw, "München LK Inz:", self.databook.get_munich_lk_inc(), layout['inc_middle'])
+            self.help_draw_trended_number(image, draw, "Bayern Inz:", self.databook.get_bavaria_inc(), layout['inc_bottom'])
 
             self.help_draw_generic_info(image, draw, "Bayern Impfquote:", self.databook.get_bavaria_vax(), layout['vax_bav'])
             self.help_draw_generic_info(image, draw, "Bayern Cov-19 KH Inz:", self.databook.get_bavaria_hospital(), layout['hosp_bav'])
