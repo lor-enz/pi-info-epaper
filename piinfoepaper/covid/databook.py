@@ -3,7 +3,7 @@ import os
 
 import urllib.request, json
 
-import mytime as mytime
+import piinfoepaper.mytime as mytime
 import fetcher as fet
 from enum import Enum
 import trend as mytrend
@@ -44,7 +44,7 @@ class Databook:
             fetcher.get_relevant_data()
             fetcher.save_storage()
             return  # no file?
-        from storage import retrieve
+        from piinfoepaper.storage import retrieve
         storage = retrieve(STORAGE_FILE)
 
         self.last_check_timestamp = storage['last_check_timestamp']
@@ -138,7 +138,7 @@ class Databook:
             format='%Y-%m-%dT%H:%M:%S.%fZ'
 
         timestamp = mytime.string2timestamp(date, time_format=format)
-        delta_in_secs = mytime.current_time() - timestamp - 24*60*60*shift
+        delta_in_secs = mytime.current_time() - timestamp - 24 * 60 * 60 * shift
         delta_in_hours = round(delta_in_secs / 60 / 60)
         logging.info(f"{label} is {delta_in_hours} hours old")
 
