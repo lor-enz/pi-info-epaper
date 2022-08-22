@@ -26,7 +26,8 @@ It displays information on the current covid-19 situation in Bavaria and Munich.
 
 ![paper-vax-update-showcase](https://user-images.githubusercontent.com/33176142/142194954-c7d4dd77-aa9f-4d4d-9a38-d57d85000496.gif)
 
-This is an older software version that estimated how many vaccine doses would be given out on a day. Assuming the vaccinations are distributed over the working hours of the day it and would update the number as fast as the screen allows it (~every 5 seconds).
+
+This is an older software version that estimates how many vaccine doses would be given out on a day and would update the number as fast as the screen allows it (~every 5 seconds).
 
 It also shows a nice 3D printed case for the screen, adapter and pizero I designed myself :)
 
@@ -77,12 +78,14 @@ sudo apt update && sudo apt upgrade
 ```sh
 sudo raspi-config
 ```
+
+```
 -> 3 Interface Options
 -> P4 SPI
 -> Yes
 -> Ok	
 -> Finish
-
+```
 Also set the **timezone** of the raspberry py to Germanys timezone. While in ```sudo raspi-config``` set it to Europe/Berlin
 
 ```sh
@@ -116,12 +119,12 @@ sudo apt clean && sudo apt autoclean && sudo apt autoremove
 ```
 
 
-Lastly install git to clone this or the official repo.
+Now let's install git to clone this repo, as described in the next section.
 ```sh
 sudo apt install -y git
 ```
 
-You can try the waveshare example code if you want. It has some nice demo code. Instructions and code are on their [github page](https://github.com/waveshare/e-Paper) .
+Alternatively you can try the waveshare example code if you want. It has some nice demo code. Instructions and code are on their [github page](https://github.com/waveshare/e-Paper) .
 
 </p>
 </details>
@@ -129,7 +132,7 @@ You can try the waveshare example code if you want. It has some nice demo code. 
 <details><summary>Setting up my code</summary>
 <p>
 
-The following commaned clones this repo and installs dependencies. I recommend installing pandas like shown below with *apt*. Other ways (pip or conda) will probably lead to issues.
+The following command clones this repo and installs dependencies. I recommend installing pandas like shown below with *apt*. Other ways (pip or conda) will probably lead to issues.
 
 ```sh
 cd ~
@@ -138,17 +141,23 @@ pip3 install pytz
 sudo apt install -y python3-pandas
 ```
 
-figure out where your python3 is install with ```which python3``` and check to which directory you cloned this github repo. 
+Now install it as a package
+```
+cd pi-info-epaper
+sudo python setup.py install
+```
+
+figure out where your python3 is install with ```which python3```. 
 Adapt the script.sh in the root folder of this repo if necessary. 
 
 
 Create a logfile by runnning ```touch ~/info-screen.log```
-Run script.sh it to see if it's working. 
+Run run_covid.sh it to see if it's working. 
  
 then configure a cronjob by by running ```crontab -e```
 and add the following line:
 
-```10 */1 * * * ~/pi-info-epaper/script.sh >> ~/info-screen.log 2>&1```
+```10 */1 * * * ~/pi-info-epaper/run_covid.sh >> ~/info-screen.log 2>&1```
 
 which runs the script at minute 10 past every hour.
  
@@ -160,7 +169,7 @@ That's it you're done!
 <details><summary>Running Tests</summary>
 <p>
 
-In repo folder run a all tests from a TestClass like this:
+In repo folder run all tests from a TestClass like this:
 
 ```python3 code/test_storage.py TestStorage```
 

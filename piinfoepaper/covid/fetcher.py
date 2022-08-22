@@ -6,7 +6,8 @@ import requests
 
 import trend as mytrend
 
-import mytime as mytime
+import piinfoepaper.mytime as mytime
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #    This class knows two APIs to retrieve it's information: Most is from corona-zahlen.org but the ICU numbers   #
@@ -47,7 +48,7 @@ class Fetcher:
         if not os.path.isfile(STORAGE_FILE):
             logging.info(f'{STORAGE_FILE} does not exist (yet)')
             return {}  # no file?
-        from storage import retrieve
+        from piinfoepaper.storage import retrieve
         storage = retrieve(STORAGE_FILE)
         try:
             self.districts = storage['districts']
@@ -72,7 +73,7 @@ class Fetcher:
             'bavaria_vax': self.bavaria_vax,
             'bavaria_icu': self.bavaria_icu,
         }
-        from storage import store
+        from piinfoepaper.storage import store
         store(STORAGE_FILE, storage)
 
     def get_relevant_data_if_needed(self):
