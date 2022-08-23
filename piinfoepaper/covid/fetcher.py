@@ -42,7 +42,7 @@ class Fetcher:
     bavaria_population = 13_140_183
 
     def __init__(self):
-        storage = self.load_storage()
+        self.load_storage()
 
     def load_storage(self):
         if not os.path.isfile(STORAGE_FILE):

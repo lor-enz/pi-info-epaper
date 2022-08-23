@@ -33,6 +33,15 @@ def string2timestamp(time_string, time_format="%Y-%m-%d_%H:%M", timezone_name=TZ
         logging.error(f'Error in mytime. time_string is {time_string} time_format is {time_format} error message is {e} ')
 
 
+def weekday_to_german_short(number):
+    options = {0: "Mo",
+               1: "Di",
+               2: "Mi",
+               3: "Do",
+               4: "Fr",
+               5: "Sa",
+               6: "So"}
+    return options[number]
 
 
 
