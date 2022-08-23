@@ -4,6 +4,7 @@
 import os
 import random
 import sys
+from enum import Enum
 from PIL import Image, ImageDraw, ImageFont
 import time
 import piinfoepaper.mytime as mytime
@@ -29,26 +30,29 @@ def flip_partial(partial, paper_w, paper_h):
         new_y_s = paper_h - partial[3]
         return new_x_s, new_y_s, new_x_e, new_y_e
 
+class Alignment(Enum):
+    TOP_LEFT = 0,
+    TOP_RIGHT = 1,
+    CENTERED = 2
 
+class Fill(Enum):
+    GRAY1 = 1,
+    GRAY2 = 2,
+    GRAY3 = 3,
+    GRAY4 = 4,
 
-SPACING = 87
-VERTICAL_PAD = 10
-PAD = 10
-RIGHT_X = 293
 layout = {
-    'time': (194, 0),
-    'weekday': (125, 80),
-    'temp_min': (110, 210),
-    'temp_max': (480-110, 210),
-    'dash': (240, 210),
-    'icon1': (405-128, 90),
-    'icon2': (405, 90),
-    'one_icon': (341, 90),
-    'center': (240, 140)
+    # x- position, y-position, alignment, fontsize
+    'time': (480, 0, Alignment.TOP_RIGHT, 12),
+    'weekday': (125, 55, Alignment.CENTERED, 80),
+    'day_date': (125, 125, Alignment.CENTERED, 45),
+    'temp_min': (110, 210, Alignment.CENTERED, 80),
+    'temp_max': (480-110, 210, Alignment.CENTERED, 80),
+    'dash': (240, 210, Alignment.CENTERED, 80),
+    'icon1': (405-128, 90, Alignment.CENTERED, 0),
+    'icon2': (405, 90, Alignment.CENTERED, 0),
+    'one_icon': (341, 90, Alignment.CENTERED, 0),
 }
-
-
-# Arrow is 48 px. Add 3 px of margin to num
 
 class Paper:
 
@@ -60,12 +64,6 @@ class Paper:
         self.epd = epd3in7.EPD()
         self.flip = flip
         self.databook = databook
-        self.font_huge = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 80)
-        self.font_very_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 70)
-        self.font_big = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 45)
-        self.font_medium = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 56)
-        self.font_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 18)
-        self.font_very_small = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 14)
 
     def cancel_file_exists(self):
         if os.path.isfile("/home/pi/partial.cancel") or os.path.isfile("~/partial.cancel"):
@@ -73,30 +71,42 @@ class Paper:
             return True
         return False
 
-    def write_current_time(self, epd, draw):
-        string_to_display = f'{mytime.current_time_hr("%d %b %H:%M")}'
-        draw.text(layout['time'], string_to_display, font=self.font_very_small, fill=epd.GRAY4)
-        logging.info(f"Add to screen {string_to_display}")
-
-    def help_draw_icon_centered(self, image, icon_nr, xy):
-        if icon_nr > 31 or icon_nr < 1:
-            img_file = f'weather/00.bmp'
-        elif icon_nr > 0 and icon_nr < 10:
+    def draw_weather_icon(self, paper_image, icon_nr, lay):
+        if 10 <= icon_nr <= 31:
+            img_file = f'weather/{icon_nr}.bmp'
+        elif 1 <= icon_nr <= 9:
             img_file = f'weather/0{icon_nr}.bmp'
         else:
-            img_file = f'weather/{icon_nr}.bmp'
-        bmp = Image.open(os.path.join(picdir, img_file))
-        (width, height) = (128,128)
-        image.paste(bmp, (int(xy[0]-width/2), int(xy[1]-height/2)))
+            img_file = f'weather/00.bmp'
 
-    def help_draw_text_centered(self, draw, text, xy, font):
+        self.draw_image(paper_image, img_file, lay)
+
+    def draw_image(self, paper_image, img_filename, lay):
+        icon = Image.open(os.path.join(picdir, img_filename))
+        width, height = icon.size
+        x, y = self.calc_pos_from_alignment(lay, width, height)
+        paper_image.paste(icon, (x, y))
+
+    def draw_text(self, draw, text, lay, fill=Fill.GRAY4):
+        font = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), lay[3])
         (width, height) = font.getsize(text)
-        x = int(xy[0]- width/2)
-        y = int(xy[1] - height / 2)
+        x, y = self.calc_pos_from_alignment(lay, width, height)
 
-        logging.info(f"Drawing \'{text}\' at ({x}, {y})")
+        logging.info(f"Drawing size {lay[3]} \'{text}\' at ({x}, {y})")
         # Label
-        draw.text((x, y), f'{text}', font=font, fill=self.epd.GRAY4)
+        draw.text((x, y), f'{text}', font=font, fill=self.fill2grey(fill))
+
+    def calc_pos_from_alignment(self, lay, width, height):
+        if lay[2] == Alignment.TOP_LEFT:
+            x = int(lay[0])
+            y = int(lay[1])
+        elif lay[2] == Alignment.TOP_RIGHT:
+            x = int(lay[0] - width)
+            y = int(lay[1])
+        elif lay[2] == Alignment.CENTERED:
+            x = int(lay[0] - width / 2)
+            y = int(lay[1] - height / 2)
+        return x, y
 
     def draw_data(self):
         epd = self.epd
@@ -104,35 +114,32 @@ class Paper:
         epd.Clear(0xFF, 0)
 
         try:
-            image = Image.new('L', (epd.height, epd.width), 0xFF)
-            draw = ImageDraw.Draw(image)
-            self.write_current_time(epd, draw)
+            paper_image = Image.new('L', (epd.height, epd.width), 0xFF)
+            draw = ImageDraw.Draw(paper_image)
+            # Current time - small in the corner
+            self.draw_text(draw, f'{mytime.current_time_hr("%d %b %H:%M")}', layout['time'])
             # # # # # # # # # # # # #
             # DAY
-            self.help_draw_text_centered(draw, self.databook.get_day_of_week(), layout['weekday'], font=self.font_huge)
+            self.draw_text(draw, self.databook.get_day_of_week(), layout['weekday'])
+            self.draw_text(draw, self.databook.get_pretty_date(), layout['day_date'])
+
             # ICONS
-            # icon1, icon2 = self.databook.get_random_icons()
-            # self.help_draw_icon_centered(image, icon1, layout['icon1'])
-            # self.help_draw_icon_centered(image, icon2, layout['icon2'])
             if self.databook.are_icons_different():
-                self.help_draw_icon_centered(image, self.databook.get_icon1(), layout['icon1'])
-                self.help_draw_icon_centered(image, self.databook.get_icon2(), layout['icon2'])
+                self.draw_weather_icon(paper_image, self.databook.get_icon1(), layout['icon1'])
+                self.draw_weather_icon(paper_image, self.databook.get_icon2(), layout['icon2'])
             else:
-                self.help_draw_icon_centered(image, self.databook.get_icon1(), layout['one_icon'])
+                self.draw_weather_icon(paper_image, self.databook.get_icon1(), layout['one_icon'])
             # TEMP
-            self.help_draw_text_centered(draw, self.databook.get_temp_min(), layout['temp_min'], font=self.font_huge)
-            self.help_draw_text_centered(draw, "-", layout['dash'], font=self.font_huge)
-            self.help_draw_text_centered(draw, self.databook.get_temp_max(), layout['temp_max'], font=self.font_huge)
-
-
-
+            self.draw_text(draw, self.databook.get_temp_min(), layout['temp_min'] )
+            self.draw_text(draw, "-", layout['dash'], fill=Fill.GRAY3 )
+            self.draw_text(draw, self.databook.get_temp_max(), layout['temp_max'])
 
             # # # # # # # # # # # # #
             # save as file, maybe flip, then push to display
-            image.save(r'image.png')
+            paper_image.save(r'image.png')
             if self.flip:
-                image = image.transpose(Image.ROTATE_180)
-            epd.display_4Gray(epd.getbuffer_4Gray(image))
+                paper_image = paper_image.transpose(Image.ROTATE_180)
+            epd.display_4Gray(epd.getbuffer_4Gray(paper_image))
             epd.sleep()
         except IOError as e:
             logging.info(e)
@@ -142,21 +149,15 @@ class Paper:
             epd3in7.epdconfig.module_exit()
             exit()
 
-
-    ##
-        # # Label
-        # draw.text((x, y), f'{label}',
-        #           font=self.font_small, fill=self.epd.GRAY4)
-        # # Number
-        # number = "?" if trended_object[0] < 0 else f"{trended_object[0]}"
-        # draw.text((x + 51, y + 19), number,
-        #           font=self.font_medium, fill=self.freshness_to_grey(trended_object[2]))
-        #
-        # arrow_file = f'{trended_object[1]}.bmp'
-        # bmp = Image.open(os.path.join(picdir, arrow_file))
-        # image.paste(bmp, (x, y + 27))
-
-    ##
+    def fill2grey(self, fill: Fill):
+        if fill == Fill.GRAY4:
+            return self.epd.GRAY4
+        elif fill == Fill.GRAY3:
+            return self.epd.GRAY3
+        elif fill == Fill.GRAY2:
+            return self.epd.GRAY2
+        else:
+            return self.epd.GRAY1
 
     def freshness_to_grey(self, freshness):
         if (freshness.value == 0):

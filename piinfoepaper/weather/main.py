@@ -12,7 +12,7 @@ if __name__ == '__main__':
             flip = True
     print(f'Flip: {flip}')
     logging.basicConfig(level=logging.INFO)
-    logging.info(f'## Start at {mytime.current_time_hr()}')
+    logging.info(f'## Start weather display at {mytime.current_time_hr()}')
 
     from databook import Databook
     from paper import Paper

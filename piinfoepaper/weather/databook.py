@@ -32,6 +32,11 @@ class Databook:
     def get_day_date(self):
         return self.day_date
 
+    def get_pretty_date(self):
+        datestring = f"{self.day_date}_07:00"
+        datetime = mytime.string2datetime(datestring)
+        return datetime.strftime("%d. %b")
+
     def get_temp_min(self):
         string = str(self.temp_min)
         string = string[:-1] + '.' + string[-1:] + '°'

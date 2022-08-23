@@ -35,5 +35,5 @@ if __name__ == '__main__':
             flip = True
     print(f'Flip: {flip}')
     logging.basicConfig(level=logging.INFO)
-    logging.info(f'## Start at {mytime.current_time_hr()}')
+    logging.info(f'## Start covid19 display at {mytime.current_time_hr()}')
     maybe_9_min_update(flip)
