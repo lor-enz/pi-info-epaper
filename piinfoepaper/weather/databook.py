@@ -9,25 +9,34 @@ class Databook:
     def __init__(self):
         logging.basicConfig(level=logging.INFO)
         fetcher = Fetcher()
-        fetcher.get_relevant_data_if_needed()
-        self.load_storage()
+        self.json = fetcher.get_relevant_data_if_needed()
+        day_index = self.get_day_index_smart()
+        forecast_day = self.json['days'][day_index]
+        self.day_date = forecast_day['dayDate']
+        self.temp_min = forecast_day['temperatureMin']
+        self.temp_max = forecast_day['temperatureMax']
+        self.icon1 = forecast_day['icon1']
+        self.icon2 = forecast_day['icon2']
 
-    def load_storage(self):
-        if not os.path.isfile(STORAGE_FILE):
-            logging.info(f'{STORAGE_FILE} does not exist (yet)')
-            fetcher = Fetcher()
-            fetcher.get_relevant_data()
-            fetcher.save_storage()
-            return  # no file?
-        from piinfoepaper.storage import retrieve
-        storage = retrieve(STORAGE_FILE)
+    def set_dummy_data(self):
+        self.temp_min = -2732  # -273.2
+        self.temp_max = 9990  # 999.0
+        self.icon1 = 0
+        self.icon2 = 0
+        self.day_date = "1970-01-01"
 
-        self.temp_min = storage['temp_min']
-        self.temp_max = storage['temp_max']
-        self.icon1 = storage['icon1']
-        self.icon2 = storage['icon2']
-        self.day_date = storage['day_date']
-        logging.debug(f'Loaded {STORAGE_FILE}')
+    def get_day_index_smart(self):
+        current_dt = mytime.ts2dt(mytime.current_time())
+        do_we_want_tomorrows_forecast = current_dt.hour >= 19
+        forecast_index = 0
+        for i, obj in enumerate(self.json['days']):
+            forecast_dt = mytime.string2datetime(f"{obj['dayDate']}_07:00")
+            if current_dt.day == forecast_dt.day:
+                forecast_index = i
+        if do_we_want_tomorrows_forecast:
+            forecast_index = forecast_index + 1
+        return forecast_index
+
 
     def get_day_date(self):
         return self.day_date
