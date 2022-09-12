@@ -7,7 +7,7 @@ import pytz
 TZ_GERMANY = "Europe/Berlin"
 
 # timestamp in seconds
-def current_time():
+def current_time() -> float:
     return time.time()
 
 
@@ -15,7 +15,7 @@ def current_time_hr(str_format="%Y-%m-%d_%H:%M:%S"):
     return ts2dt(current_time()).strftime(str_format)
 
 
-def ts2dt(timestamp, timezone_name=TZ_GERMANY):
+def ts2dt(timestamp, timezone_name=TZ_GERMANY) -> datetime.datetime:
     tz = pytz.timezone(timezone_name)
     # To convert the timestamp to an aware datetime object in the given timezone directly:
     return dt.fromtimestamp(timestamp, tz)

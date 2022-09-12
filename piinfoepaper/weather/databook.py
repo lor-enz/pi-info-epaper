@@ -1,8 +1,15 @@
 import logging
 import os
-from fetcher import Fetcher
+import sys
+
+from piinfoepaper.weather.fetcher import Fetcher
 import piinfoepaper.mytime as mytime
+from piinfoepaper.paper_elements import PaperTextElement, PaperImageElement
+from piinfoepaper.paper_enums import Alignment, Fill, Orientation
+from piinfoepaper.paper_layout import PaperLayout
+
 STORAGE_FILE = 'storage.json'
+
 
 class Databook:
 
@@ -17,6 +24,10 @@ class Databook:
         self.temp_max = forecast_day['temperatureMax']
         self.icon1 = forecast_day['icon1']
         self.icon2 = forecast_day['icon2']
+        self.resdir = os.path.join(os.path.dirname(
+            os.path.dirname(os.path.realpath(__file__))), 'res')  # path next to this file
+        if os.path.exists(self.resdir):
+            sys.path.append(self.resdir)
 
     def set_dummy_data(self):
         self.temp_min = -2732  # -273.2
@@ -36,7 +47,6 @@ class Databook:
         if do_we_want_tomorrows_forecast:
             forecast_index = forecast_index + 1
         return forecast_index
-
 
     def get_day_date(self):
         return self.day_date
@@ -69,13 +79,47 @@ class Databook:
     def get_random_icons(self):
         from random import randrange
         icon1 = randrange(32)
-        return icon1, icon1+1
+        return icon1, icon1 + 1
 
     def get_icon1(self):
         logging.info(f"returning icon {self.icon1}")
         return self.icon1
 
+    def get_icon_path(self, icon_nr):
+        if 10 <= icon_nr <= 31:
+            file_name = f'weather/{icon_nr}.bmp'
+        elif 1 <= icon_nr <= 9:
+            file_name = f'weather/0{icon_nr}.bmp'
+        else:
+            file_name = f'weather/00.bmp'
+
+        return os.path.join(self.resdir, file_name)
+
     def get_icon2(self):
         logging.info(f"returning icon {self.icon2}")
         return self.icon2
 
+    def get_paper_layout(self):
+        text_elements = [
+            PaperTextElement(480, 0, Alignment.TOP_RIGHT, Fill.GRAY4, f'{mytime.current_time_hr("%d %b %H:%M")}', 12),
+            PaperTextElement(115, 55, Alignment.CENTERED, Fill.GRAY4, f'{self.get_day_of_week()}', 80),
+            PaperTextElement(115, 125, Alignment.CENTERED, Fill.GRAY4, f'{self.get_pretty_date()}', 45),
+            PaperTextElement(22, 280 - 27, Alignment.BOTTOM_LEFT, Fill.GRAY4, f'{self.get_temp_min()}', 80),
+            PaperTextElement(480 - 22, 280 - 27, Alignment.BOTTOM_RIGHT, Fill.GRAY4, f'{self.get_temp_max()}', 80),
+            PaperTextElement(240, 280 - 27, Alignment.BOTTOM_CENTER, Fill.GRAY4, '-', 80),
+        ]
+
+        if self.are_icons_different():
+            image_elements = [
+                PaperImageElement(405 - 128, 90, Alignment.CENTERED,
+                                  f'{self.get_icon_path(self.get_icon1())}'),
+                PaperImageElement(405, 90, Alignment.CENTERED,
+                                  f'{self.get_icon_path(self.get_icon2())}')
+            ]
+        else:
+            image_elements = [
+                PaperImageElement(341, 90, Alignment.CENTERED,
+                                  f'{self.get_icon_path(self.get_icon1())}')
+            ]
+        font_path = os.path.join(self.resdir, 'Font.ttc')
+        return PaperLayout(Orientation.LANDSCAPE, font_path, text_elements, image_elements, None, None)

@@ -1,13 +1,10 @@
 import os
 import logging
-import urllib.request, json
+import traceback
 
 import requests
-
-import trend as mytrend
-
+from .trend import Trend
 import piinfoepaper.mytime as mytime
-
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #    This class knows two APIs to retrieve it's information: Most is from corona-zahlen.org but the ICU numbers   #
@@ -34,6 +31,7 @@ AGS = {
 }
 
 STORAGE_FILE = 'storage.json'
+
 
 class Fetcher:
     last_check_timestamp = 0
@@ -108,19 +106,21 @@ class Fetcher:
             districts['miesbach'] = self.district_helper_function(response, AGS['miesbach'])
 
             return districts
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
+            print(traceback.format_exc())
             logging.exception(f"ERROR when getting data (get_district_incidence). Using old value.")
+
             return self.districts
 
     def district_helper_function(self, response, ags_id):
         history = response.json()['data'][ags_id]['history']
-        trend = mytrend.trend(float(history[-2]['weekIncidence']), float(history[-1]['weekIncidence']))
+        # trend = Trend(float(history[-2]['weekIncidence']), float(history[-1]['weekIncidence']))
         current = history[-1]['weekIncidence']
         # TODO Workaround: Since we're currently using the incidence instead of frozen-incidence we don't have the correct trend.
         # TODO Workaround: The date is shifted by one. So we're just putting it 23 hours and 59 minutes into the future
         return {
             'week_incidence': current,
-            'incidence_trend': mytrend.Trend.UNKNOWN.value,
+            'incidence_trend': Trend.UNKNOWN.value,
             'date': history[-1]['date'].replace('00:00:00.000Z', '23:59:00.000Z')
         }
 
@@ -151,14 +151,15 @@ class Fetcher:
 
             previous_inz = round((cases_last_7_days - delta_cases) / (self.bavaria_population / 100_000), 1)
 
-            trend = mytrend.trend(float(previous_inz), float(bavaria_week_incidence))
+            trend = Trend.trend(float(previous_inz), float(bavaria_week_incidence))
             timestamp_bav_inc = history[-1]['date']
             return {'bavaria_week_incidence': bavaria_week_incidence,
                     'incidence_trend': trend.value,
                     'bavaria_hospital_cases_7_days': bavaria_hospital_cases_7_days,
                     'date': timestamp_bav_inc
                     }
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
+            print(traceback.format_exc())
             logging.exception(f"ERROR when getting data (get_bavaria_incidence_and_hospital_cases). Using old value. ")
             return self.bavaria_dict
 
@@ -192,7 +193,7 @@ class Fetcher:
                 }
             history = response.json()[-2:]
 
-            trend = mytrend.trend(float(history[-2]['faelleCovidAktuell']), float(history[-1]['faelleCovidAktuell']))
+            trend = Trend.trend(float(history[-2]['faelleCovidAktuell']), float(history[-1]['faelleCovidAktuell']))
             current = history[-1]['faelleCovidAktuell']
 
             result = {
@@ -201,6 +202,6 @@ class Fetcher:
                 'date': response.json()[-1]['date']
             }
             return result
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             logging.exception(f"ERROR when getting data (get_bavaria_icu). Using old value.")
             return self.bavaria_icu
