@@ -81,40 +81,41 @@ class PaperController:
         return x, y
 
     def draw_data(self):
-        self.clear()
+        try:
+            self.clear()
 
-        self.paper_image = Image.new('L', (self.epd.height, self.epd.width), 0xFF)
-        self.draw = ImageDraw.Draw(self.paper_image)
-        logging.info(f"Drawing {len(self.paper_layout.text_elements)} text elements"
-                     f" and {len(self.paper_layout.image_elements)} image elements...")
-        for el in self.paper_layout.text_elements:
-            try:
-                self.draw_text(el)
-            except IOError as e:
-                logging.info(f"Error drawing text")
-                logging.error(e)
+            self.paper_image = Image.new('L', (self.epd.height, self.epd.width), 0xFF)
+            self.draw = ImageDraw.Draw(self.paper_image)
+            logging.info(f"Drawing {len(self.paper_layout.text_elements)} text elements"
+                         f" and {len(self.paper_layout.image_elements)} image elements...")
+            for el in self.paper_layout.text_elements:
+                try:
+                    self.draw_text(el)
+                except IOError as e:
+                    logging.info(f"Error drawing text")
+                    logging.error(e)
 
-        for el in self.paper_layout.image_elements:
-            try:
-                self.draw_image(el)
-            except IOError as e:
-                logging.info(f"Error drawing image: {el}")
-                logging.error(e)
+            for el in self.paper_layout.image_elements:
+                try:
+                    self.draw_image(el)
+                except IOError as e:
+                    logging.info(f"Error drawing image: {el}")
+                    logging.error(e)
 
-        # # # # # # # # # # # # #
-        # save as file, maybe flip, then push to display
-        self.paper_image.save(r'image.png')
-        # TODO switch case Orientation and so on...
+            # # # # # # # # # # # # #
+            # save as file, maybe flip, then push to display
+            self.paper_image.save(r'/home/pi/image.png')
+            # TODO switch case Orientation and so on...
             # self.paper_image = self.paper_image.transpose(Image.ROTATE_180)
 
-        self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.paper_image))
-        self.epd.sleep()
+            self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.paper_image))
+            self.epd.sleep()
 
 
-        # except KeyboardInterrupt:
-        #     logging.info("ctrl + c:")
-        #     epd3in7.epdconfig.module_exit()
-        #     exit()
+        except KeyboardInterrupt:
+            logging.info("ctrl + c:")
+            epd3in7.epdconfig.module_exit()
+            exit()
 
     def fill2grey(self, fill: Fill):
         if fill.value == Fill.GRAY4.value:
