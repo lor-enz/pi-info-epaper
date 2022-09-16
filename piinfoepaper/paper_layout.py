@@ -1,8 +1,8 @@
 
 from typing import List
 
-from piinfoepaper.paper_elements import PaperImageElement, PaperTextElement, PaperTextPartialElement, PaperImagePartialElement
-from piinfoepaper.paper_enums import Orientation
+from paper_elements import PaperImageElement, PaperTextElement, PaperTextPartialElement, PaperImagePartialElement
+from paper_enums import Orientation
 
 
 class PaperLayout:

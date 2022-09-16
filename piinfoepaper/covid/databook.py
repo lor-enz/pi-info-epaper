@@ -196,7 +196,7 @@ class Databook:
 
         return text_elements, image_elements
 
-    def get_paper_layout(self):
+    def get_paper_layout(self, config: dict):
         text_elements = []
         image_elements = []
         # LEFT SIDE

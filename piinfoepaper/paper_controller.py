@@ -2,15 +2,13 @@
 # -*- coding:utf-8 -*-
 
 import os
-import random
-import sys
-from enum import Enum
+
 from PIL import Image, ImageDraw, ImageFont
-import time
+
 import mytime as mytime
 from paper_elements import PaperTextElement, PaperImageElement
 from paper_layout import PaperLayout
-from paper_enums import Alignment, Fill
+from paper_enums import Alignment, Fill, Orientation
 
 from waveshare_epd import epd3in7
 import logging
@@ -58,24 +56,32 @@ class PaperController:
         if alignment.value == Alignment.TOP_LEFT.value:
             x = int(xy[0])
             y = int(xy[1])
-        elif alignment.value == Alignment.TOP_RIGHT.value:
-            x = int(xy[0] - width)
-            y = int(xy[1])
-        elif alignment.value == Alignment.BOTTOM_LEFT.value:
-            x = int(xy[0])
-            y = int(xy[1] - height)
-        elif alignment.value == Alignment.BOTTOM_RIGHT.value:
-            x = int(xy[0] - width)
-            y = int(xy[1] - height)
-        elif alignment.value == Alignment.CENTERED.value:
-            x = int(xy[0] - width / 2)
-            y = int(xy[1] - height / 2)
-        elif alignment.value == Alignment.BOTTOM_CENTER.value:
-            x = int(xy[0] - width / 2)
-            y = int(xy[1] - height)
         elif alignment.value == Alignment.TOP_CENTER.value:
             x = int(xy[0] - width / 2)
             y = int(xy[1])
+        elif alignment.value == Alignment.TOP_RIGHT.value:
+            x = int(xy[0] - width)
+            y = int(xy[1])
+        elif alignment.value == Alignment.RIGHT_CENTER.value:
+            x = int(xy[0] - width)
+            y = int(xy[1] - height / 2)
+        elif alignment.value == Alignment.BOTTOM_RIGHT.value:
+            x = int(xy[0] - width)
+            y = int(xy[1] - height)
+        elif alignment.value == Alignment.BOTTOM_CENTER.value:
+            x = int(xy[0] - width / 2)
+            y = int(xy[1] - height)
+        elif alignment.value == Alignment.BOTTOM_LEFT.value:
+            x = int(xy[0])
+            y = int(xy[1] - height)
+        elif alignment.value == Alignment.LEFT_CENTER.value:
+            x = int(xy[0])
+            y = int(xy[1] - height / 2)
+        elif alignment.value == Alignment.CENTERED.value:
+            x = int(xy[0] - width / 2)
+            y = int(xy[1] - height / 2)
+
+
         else:
             logging.error(f"Failed to match alignment:{alignment} w:{width} h:{height} ")
         return x, y
@@ -105,8 +111,8 @@ class PaperController:
             # # # # # # # # # # # # #
             # save as file, maybe flip, then push to display
             self.paper_image.save(r'/home/pi/image.png')
-            # TODO switch case Orientation and so on...
-            # self.paper_image = self.paper_image.transpose(Image.ROTATE_180)
+            if self.paper_layout.orientation.value == Orientation.LANDSCAPE_FLIPPED.value:
+                self.paper_image = self.paper_image.transpose(Image.ROTATE_180)
 
             self.epd.display_4Gray(self.epd.getbuffer_4Gray(self.paper_image))
             self.epd.sleep()

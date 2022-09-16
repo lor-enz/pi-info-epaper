@@ -5,9 +5,9 @@ import sys
 import mytime as mytime
 from paper_controller import PaperController
 from paper_layout import PaperLayout
-from piinfoepaper.paper_elements import PaperTextElement
-from piinfoepaper.paper_enums import Orientation, Alignment, Fill
-from piinfoepaper.welcome.welcome import Welcome
+from paper_elements import PaperTextElement
+from paper_enums import Orientation, Alignment, Fill
+from welcome.welcome import Welcome
 from welcome.technical_info import TechnicalInfo
 
 # supposed to run after plugging in the device. Shows welcome message and technical info.

@@ -2,11 +2,15 @@ import logging
 import os
 import sys
 
-from piinfoepaper.weather.fetcher import Fetcher
-import piinfoepaper.mytime as mytime
-from piinfoepaper.paper_elements import PaperTextElement, PaperImageElement
-from piinfoepaper.paper_enums import Alignment, Fill, Orientation
-from piinfoepaper.paper_layout import PaperLayout
+
+
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+from .fetcher import Fetcher
+from paper_enums import Alignment, Fill, Orientation
+from paper_layout import PaperLayout
+from paper_elements import PaperImageElement, PaperTextElement
+import mytime as mytime
+
 
 STORAGE_FILE = 'storage.json'
 
@@ -99,7 +103,7 @@ class Databook:
         logging.info(f"returning icon {self.icon2}")
         return self.icon2
 
-    def get_paper_layout(self):
+    def get_paper_layout(self, config: dict):
         text_elements = [
             PaperTextElement(480, 0, Alignment.TOP_RIGHT, Fill.GRAY4, f'{mytime.current_time_hr("%d %b %H:%M")}', 12),
             PaperTextElement(115, 55, Alignment.CENTERED, Fill.GRAY4, f'{self.get_day_of_week()}', 80),
@@ -117,9 +121,11 @@ class Databook:
                                   f'{self.get_icon_path(self.get_icon2())}')
             ]
         else:
+            print(f'icon1 image_path: {self.get_icon_path(self.get_icon1())}')
             image_elements = [
-                PaperImageElement(341, 90, Alignment.CENTERED,
-                                  f'{self.get_icon_path(self.get_icon1())}')
+                PaperImageElement(341, 90, Alignment.CENTERED, image_path=f'{self.get_icon_path(self.get_icon1())}')
             ]
         font_path = os.path.join(self.resdir, 'Font.ttc')
-        return PaperLayout(Orientation.LANDSCAPE, font_path, text_elements, image_elements, None, None)
+        if config['flip']: orientation = Orientation.LANDSCAPE_FLIPPED
+        else: orientation = Orientation.LANDSCAPE
+        return PaperLayout(orientation, font_path, text_elements, image_elements, None, None)

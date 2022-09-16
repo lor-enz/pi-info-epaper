@@ -3,9 +3,10 @@ import logging
 import urllib.request, json
 
 import requests
-from piinfoepaper.storage import retrieve, store
-
-import piinfoepaper.mytime as mytime
+import sys
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+import mytime as mytime
+from storage import retrieve, store
 
 API_BASE_URL = 'https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/'
 API_MODIFIER = 'forecast_mosmix_%s.json'

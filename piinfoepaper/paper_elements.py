@@ -1,4 +1,4 @@
-from piinfoepaper.paper_enums import Alignment, Fill
+from paper_enums import Alignment, Fill
 
 
 class PaperElement:

@@ -4,7 +4,10 @@ import traceback
 
 import requests
 from .trend import Trend
-import piinfoepaper.mytime as mytime
+import sys
+
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+import mytime as mytime
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #    This class knows two APIs to retrieve it's information: Most is from corona-zahlen.org but the ICU numbers   #

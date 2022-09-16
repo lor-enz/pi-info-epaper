@@ -1,13 +1,16 @@
 from enum import Enum
 
+
 class Alignment(Enum):
     TOP_LEFT = 0,
-    BOTTOM_LEFT = 1,
-    TOP_RIGHT = 2,
-    BOTTOM_RIGHT = 3,
-    CENTERED = 4,
-    BOTTOM_CENTER = 5,
-    TOP_CENTER = 6
+    TOP_CENTER = 2
+    TOP_RIGHT = 3,
+    RIGHT_CENTER = 4,
+    BOTTOM_RIGHT = 5,
+    BOTTOM_CENTER = 6,
+    BOTTOM_LEFT = 7,
+    LEFT_CENTER = 8,
+    CENTERED = 9,
 
 
 class Fill(Enum):
