@@ -5,10 +5,12 @@ from enum import Enum
 
 from .fetcher import Fetcher
 from .trend import Trend
-import piinfoepaper.mytime as mytime
-from piinfoepaper.paper_elements import PaperTextElement, PaperImageElement
-from piinfoepaper.paper_enums import Alignment, Fill, Orientation
-from piinfoepaper.paper_layout import PaperLayout
+
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+import mytime as mytime
+from paper_enums import Alignment, Fill, Orientation
+from paper_layout import PaperLayout
+from paper_elements import PaperImageElement, PaperTextElement
 
 LOOK_BACK_FOR_MEAN = 3
 # 34 because: imagine it's a day old, during business hours it would just download new data. But at 34 hrs old,
