@@ -115,9 +115,6 @@ class Databook:
         freshness = self.evaluate_freshness(self.bavaria_icu['date'], label='Bavaria ICU')
         return icu_cases, freshness, trend
 
-    def get_bavaria_ampel_color(self):
-        return Ampel_color.RED.value
-
     def evaluate_ampel_status(self):
         hosp = self.get_bavaria_hospital()[0]
         icu = self.get_bavaria_icu()[0]
