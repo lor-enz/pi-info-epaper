@@ -14,5 +14,5 @@ from welcome.technical_info import TechnicalInfo
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     logging.info(f'## Start Welcome display at {mytime.current_time_hr()}')
-    layout = Welcome().get_layout()
+    layout = Welcome(15).get_layout()
     paper_controller = PaperController(layout)

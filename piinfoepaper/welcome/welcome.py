@@ -8,16 +8,16 @@ from paper_elements import PaperTextElement, PaperImageElement
 from paper_enums import Alignment, Fill, Orientation
 from paper_layout import PaperLayout
 from .technical_info import TechnicalInfo
-
+import time
 
 class Welcome:
 
-    def __init__(self):
+    def __init__(self, wait_time_seconds=10):
         self.resdir = os.path.join(os.path.dirname(
             os.path.dirname(os.path.realpath(__file__))), 'res')  # path next to this file
         if os.path.exists(self.resdir):
             sys.path.append(self.resdir)
-
+        time.sleep(wait_time_seconds)
         info = TechnicalInfo()
         self.ip = info.local_ip
 
