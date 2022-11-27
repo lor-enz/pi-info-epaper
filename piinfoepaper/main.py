@@ -47,7 +47,7 @@ def load_config():
     json_data = retrieve(file_path)
     config = {}
     config['flip'] = json_data['flip']
-    logging.info(f"loaded Config: {config}" )
+    logging.info(f"loaded Config: {config}")
     return config
 
 
