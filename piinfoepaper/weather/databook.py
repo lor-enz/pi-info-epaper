@@ -2,8 +2,6 @@ import logging
 import os
 import sys
 
-
-
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from .fetcher import Fetcher
 from paper_enums import Alignment, Fill, Orientation
@@ -11,27 +9,27 @@ from paper_layout import PaperLayout
 from paper_elements import PaperImageElement, PaperTextElement
 import mytime as mytime
 
-
 STORAGE_FILE = 'storage.json'
 
 
 class Databook:
 
-    def __init__(self):
+    def __init__(self, fetch=True):
         logging.basicConfig(level=logging.INFO)
-        fetcher = Fetcher()
-        self.json = fetcher.get_relevant_data_if_needed()
-        day_index = self.get_day_index_smart()
-        forecast_day = self.json['days'][day_index]
-        self.day_date = forecast_day['dayDate']
-        self.temp_min = forecast_day['temperatureMin']
-        self.temp_max = forecast_day['temperatureMax']
-        self.icon1 = forecast_day['icon1']
-        self.icon2 = forecast_day['icon2']
-        self.resdir = os.path.join(os.path.dirname(
-            os.path.dirname(os.path.realpath(__file__))), 'res')  # path next to this file
-        if os.path.exists(self.resdir):
-            sys.path.append(self.resdir)
+        if fetch:
+            fetcher = Fetcher()
+            self.json = fetcher.get_relevant_data_if_needed()
+            day_index = self.get_day_index_smart()
+            forecast_day = self.json['days'][day_index]
+            self.day_date = forecast_day['dayDate']
+            self.temp_min = forecast_day['temperatureMin']
+            self.temp_max = forecast_day['temperatureMax']
+            self.icon1 = forecast_day['icon1']
+            self.icon2 = forecast_day['icon2']
+            self.resdir = os.path.join(os.path.dirname(
+                os.path.dirname(os.path.realpath(__file__))), 'res')  # path next to this file
+            if os.path.exists(self.resdir):
+                sys.path.append(self.resdir)
 
     def set_dummy_data(self):
         self.temp_min = -2732  # -273.2
@@ -60,15 +58,15 @@ class Databook:
         datetime = mytime.string2datetime(datestring)
         return datetime.strftime("%d. %b")
 
-    def get_temp_min(self):
-        string = str(self.temp_min)
-        string = string[:-1] + '.' + string[-1:] + '°'
-        return string
+    def get_temp_min_string(self, temp=None):
+        if temp is None:
+            temp = self.temp_min
+        return f'{temp / 10}°'
 
-    def get_temp_max(self):
-        string = str(self.temp_max)
-        string = string[:-1] + '.' + string[-1:] + '°'
-        return string
+    def get_temp_max_string(self, temp=None):
+        if temp is None:
+            temp = self.temp_max
+        return f'{temp / 10}°'
 
     def get_day_of_week(self):
         datestring = f"{self.day_date}_07:00"
@@ -108,8 +106,9 @@ class Databook:
             PaperTextElement(480, 0, Alignment.TOP_RIGHT, Fill.GRAY4, f'{mytime.current_time_hr("%d %b %H:%M")}', 12),
             PaperTextElement(115, 55, Alignment.CENTERED, Fill.GRAY4, f'{self.get_day_of_week()}', 80),
             PaperTextElement(115, 125, Alignment.CENTERED, Fill.GRAY4, f'{self.get_pretty_date()}', 45),
-            PaperTextElement(22, 280 - 27, Alignment.BOTTOM_LEFT, Fill.GRAY4, f'{self.get_temp_min()}', 80),
-            PaperTextElement(480 - 22, 280 - 27, Alignment.BOTTOM_RIGHT, Fill.GRAY4, f'{self.get_temp_max()}', 80),
+            PaperTextElement(22, 280 - 27, Alignment.BOTTOM_LEFT, Fill.GRAY4, f'{self.get_temp_min_string()}', 80),
+            PaperTextElement(480 - 22, 280 - 27, Alignment.BOTTOM_RIGHT, Fill.GRAY4, f'{self.get_temp_max_string()}',
+                             80),
             PaperTextElement(240, 280 - 27, Alignment.BOTTOM_CENTER, Fill.GRAY4, '-', 80),
         ]
 
@@ -126,6 +125,8 @@ class Databook:
                 PaperImageElement(341, 90, Alignment.CENTERED, image_path=f'{self.get_icon_path(self.get_icon1())}')
             ]
         font_path = os.path.join(self.resdir, 'Font.ttc')
-        if config['flip']: orientation = Orientation.LANDSCAPE_FLIPPED
-        else: orientation = Orientation.LANDSCAPE
+        if config['flip']:
+            orientation = Orientation.LANDSCAPE_FLIPPED
+        else:
+            orientation = Orientation.LANDSCAPE
         return PaperLayout(orientation, font_path, text_elements, image_elements, None, None)

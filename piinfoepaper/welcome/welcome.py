@@ -1,28 +1,30 @@
 import os
 import sys
 import logging
+import subprocess
 
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import mytime as mytime
 from paper_elements import PaperTextElement, PaperImageElement
 from paper_enums import Alignment, Fill, Orientation
 from paper_layout import PaperLayout
-from .technical_info import TechnicalInfo
 import time
+
 
 class Welcome:
 
-    def __init__(self, wait_time_seconds=10):
+    def __init__(self, wait_time_seconds):
         self.resdir = os.path.join(os.path.dirname(
             os.path.dirname(os.path.realpath(__file__))), 'res')  # path next to this file
         if os.path.exists(self.resdir):
             sys.path.append(self.resdir)
         time.sleep(wait_time_seconds)
-        info = TechnicalInfo()
-        self.ip = info.local_ip
+        self.ip = f"IP: {self.get_host_ip()}"
+
+    def get_host_ip(self):
+        return subprocess.getoutput('hostname -I')
 
     def get_plugmein_layout(self):
-
         text_elements = [
             PaperTextElement(475, 5, Alignment.TOP_RIGHT, Fill.GRAY4, f'{mytime.current_time_hr("%d %b %H:%M")}', 15),
             PaperTextElement(255, 100, Alignment.LEFT_CENTER, Fill.GRAY4, f'Hello!', 40),
