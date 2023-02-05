@@ -84,9 +84,10 @@ sudo raspi-config
 -> P4 SPI
 -> Yes
 -> Ok	
+(also set the **timezone** to Germanys timezone)
 -> Finish
 ```
-Also set the **timezone** of the raspberry py to Germanys timezone. While in ```sudo raspi-config``` set it to Europe/Berlin
+**reboot the device**
 
 ```sh
 wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.60.tar.gz
