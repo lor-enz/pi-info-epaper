@@ -149,18 +149,32 @@ sudo python setup.py install
 ```
 
 figure out where your python3 is install with ```which python3```. 
-Adapt the script.sh in the root folder of this repo if necessary. 
+Adapt the run_info_scrren.sh in the root folder of this repo if necessary. 
 
+Create the logfiles
+ ```
+ touch ~/info-screen.log
+ touch ~/gitlog.log
+ touch ~/startup.log
+ ```
+Run run_info_scrren.sh it to see if it's working. 
 
-Create a logfile by runnning ```touch ~/info-screen.log```
-Run run_covid.sh it to see if it's working. 
  
 then configure a cronjob by by running ```crontab -e```
 and add the following line:
 
-```10 */1 * * * ~/pi-info-epaper/run_covid.sh >> ~/info-screen.log 2>&1```
+```
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin:$PATH
+*/30 * * * * ~/pi-info-epaper/run_info_screen.sh >> ~/info-screen.log 2>&1
+ ```
 
 which runs the script at minute 10 past every hour.
+ 
+Also edit the sudo crontab with ```sudo crontab -e``` and add:
+```
+10 */6 * * * su -s /bin/sh pi -c 'cd /home/pi/pi-info-epaper && /usr/bin/git pull' >> /home/pi/gitlog.log 2>&1
+@reboot su -s /bin/sh pi -c '/home/pi/pi-info-epaper/run_startup.sh' >> /home/pi/startup.log 2>&1 
+```
  
 That's it you're done!
 
