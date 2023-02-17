@@ -40,7 +40,7 @@ class Databook:
 
     def get_day_index_smart(self):
         current_dt = mytime.ts2dt(mytime.current_time())
-        do_we_want_tomorrows_forecast = current_dt.hour >= 19
+        do_we_want_tomorrows_forecast = current_dt.hour >= 18
         forecast_index = 0
         for i, obj in enumerate(self.json['days']):
             forecast_dt = mytime.string2datetime(f"{obj['dayDate']}_07:00")
