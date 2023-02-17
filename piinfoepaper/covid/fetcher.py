@@ -191,8 +191,9 @@ class Fetcher:
             if (response.status_code != 200):
                 logging.error(f'Problem! {API_BR_BASE_URL} returned status code: {response.status_code}')
                 return {
-                    'icu': '?',
-                    'icu_trend': 'STEADY'
+                    'icu': -1,
+                    'icu_trend': 'UNKNOWN',
+                    'date': "2023-01-01"
                 }
             history = response.json()[-2:]
 
