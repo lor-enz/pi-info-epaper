@@ -22,11 +22,14 @@ def run_weather_screen(config: dict):
     paper_controller = PaperController(layout)
 
 
-def decide_what_to_run(config: dict):
+def decide_what_to_run(config: dict, force_covid=False, force_weather=False):
     dt = mytime.ts2dt(mytime.current_time())
-    # if 15 < dt.minute < 45:
-    #     logging.info("Skipping because: 15 < dt.minute < 45")
-    #     return
+    if force_covid:
+        run_covid_screen(config)
+        return
+    if force_weather:
+        run_weather_screen(config)
+        return
     if 14 <= dt.hour < 18:
         run_covid_screen(config)
     else:
